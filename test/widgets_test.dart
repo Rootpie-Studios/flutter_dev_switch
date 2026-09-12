@@ -50,33 +50,52 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('long press opens the menu; Server opens the picker', (
+  const DevMenuEntry noop = DevMenuEntry(
+    label: 'Noop',
+    icon: Icons.circle_outlined,
+    onTap: _nothing,
+  );
+
+  testWidgets('no entries: long press opens the picker directly', (
     tester,
   ) async {
     await pumpLogin(tester);
-    expect(find.text('Server'), findsNothing);
     await openMenu(tester);
-    expect(find.text('Developer'), findsOneWidget);
-    expect(find.text('Server'), findsOneWidget);
-
-    await tester.tap(find.text('Server'));
-    await tester.pumpAndSettle();
-    expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
+    expect(find.text('Developer'), findsNothing);
     expect(find.text('Dev'), findsOneWidget);
-
+    expect(find.text('Custom address'), findsOneWidget);
     await tester.tap(find.text('Dev'));
     await tester.pumpAndSettle();
     expect(config.picked, dev);
     expect(find.text('Server: Dev'), findsOneWidget, reason: 'badge');
   });
 
+  testWidgets(
+    'with entries: long press opens the menu; Server opens the picker',
+    (tester) async {
+      await pumpLogin(tester, entries: const [noop]);
+      expect(find.text('Server'), findsNothing);
+      await openMenu(tester);
+      expect(find.text('Developer'), findsOneWidget);
+      expect(find.text('Server'), findsOneWidget);
+
+      await tester.tap(find.text('Server'));
+      await tester.pumpAndSettle();
+      expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
+      expect(find.text('Dev'), findsOneWidget);
+
+      await tester.tap(find.text('Dev'));
+      await tester.pumpAndSettle();
+      expect(config.picked, dev);
+      expect(find.text('Server: Dev'), findsOneWidget, reason: 'badge');
+    },
+  );
+
   testWidgets('custom address: prefilled example, normalised, refused', (
     tester,
   ) async {
     await pumpLogin(tester);
     await openMenu(tester);
-    await tester.tap(find.text('Server'));
-    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Custom address'));
     await tester.pumpAndSettle();
@@ -91,8 +110,6 @@ void main() {
     expect(find.text('Server: http://192.168.55.6/api'), findsOneWidget);
 
     await openMenu(tester);
-    await tester.tap(find.text('Server'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Custom address'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'http://');
@@ -136,6 +153,7 @@ void main() {
         home: Scaffold(
           body: DevMenuTrigger(
             config: config,
+            entries: const [noop],
             strings: const DevToolsStrings.sv(),
             child: const Text('LOGO'),
           ),
@@ -147,3 +165,5 @@ void main() {
     expect(find.text('Utvecklare'), findsOneWidget);
   });
 }
+
+Future<void> _nothing(BuildContext _) async {}

@@ -13,7 +13,8 @@ What you get:
   pill that says which non-production server is in use.
 - `DevMenu` / `DevMenuTrigger` / `DevMenuEntry` – long-press a logo to open a
   menu with the Server row plus whatever the app adds (test login, data
-  generators, cache wipes).
+  generators, cache wipes). With no entries the long press opens the server
+  picker directly, so an app that only needs server switching gets no extra step.
 - `DevToolsStrings` – English by default, `DevToolsStrings.sv()` for Swedish.
 
 ## Use in an app

@@ -25,6 +25,9 @@ class DevMenuEntry {
 /// followed by whatever [entries] the app adds. Open it with [show], or
 /// wrap a logo in [DevMenuTrigger] so a long press opens it. Shows nothing
 /// and does nothing unless [DevTools.enabled].
+///
+/// With no [entries] there is nothing to choose between, so [show] opens
+/// the [ServerPicker] straight away instead of a one-row menu.
 class DevMenu extends StatelessWidget {
   final ApiConfig config;
   final List<DevMenuEntry> entries;
@@ -47,6 +50,14 @@ class DevMenu extends StatelessWidget {
     String customExample = 'http://my-macbook.local/api',
   }) {
     if (!DevTools.enabled) return Future<void>.value();
+    if (entries.isEmpty) {
+      return ServerPicker.show(
+        context,
+        config: config,
+        strings: strings,
+        customExample: customExample,
+      );
+    }
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
