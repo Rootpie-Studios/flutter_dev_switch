@@ -1,109 +1,55 @@
 # flutter_dev_switch
 
-Runtime API server switching plus a hidden developer menu, shared by the
-Rootpi Flutter apps (mapp_time, lekaos). Private; not on pub.dev.
+Hidden developer tools for Flutter apps talking to an API: switch server at
+runtime, show which one is in use, and log in as a seeded test account. Only
+active in debug builds, builds with `--dart-define=DEV_TOOLS=true`, and
+TestFlight installs; store installs get nothing.
 
-What you get:
-
-- `ApiConfig` – which server requests go to: a pick made in the app, else
-  `--dart-define=API_URL`, else production. Persisted with shared_preferences.
-- `DevTools` – on in debug builds, with `--dart-define=DEV_TOOLS=true`, and in
-  TestFlight installs; off in store installs (a store install also forgets any pick).
-- `ServerPicker` / `ServerBadge` – the bottom sheet to switch servers and the
-  pill that says which non-production server is in use.
-- `DevMenu` / `DevMenuTrigger` / `DevMenuEntry` – long-press a logo to open a
-  menu with the Server row plus whatever the app adds (test login, data
-  generators, cache wipes). With no entries the long press opens the server
-  picker directly, so an app that only needs server switching gets no extra step.
-- `DevLoginButton` / `devLoginEntry` / `DevAccount` – "Test login" as a button
-  (shown only on a non-production server) or as a menu entry: pick a seeded
-  account, the app's own `login` callback does the rest.
-- `DevToolsStrings` – English by default, `DevToolsStrings.sv()` for Swedish.
-
-## Use in an app
-
-`pubspec.yaml`, during development next to the checkout:
-
-```yaml
-dependencies:
-  flutter_dev_switch:
-    path: ../flutter_dev_switch
-```
-
-or pinned to a tag of the private repo (needs git access on the machine that builds):
+## Install
 
 ```yaml
 dependencies:
   flutter_dev_switch:
     git:
-      url: git@github.com:Rootpie-Studios/flutter_dev_switch.git
-      ref: v0.1.0
+      url: https://github.com/Rootpie-Studios/flutter_dev_switch.git
+      ref: main
 ```
 
-`lib/config/api.dart`:
+## Use
 
 ```dart
-final ApiConfig apiConfig = ApiConfig(
+// lib/config/api.dart
+final apiConfig = ApiConfig(
   environments: const [
     ApiEnvironment(key: 'production', label: 'Production', baseUrl: 'https://example.com/api'),
-    ApiEnvironment(key: 'staging', label: 'Staging', baseUrl: 'https://staging.example.com/api'),
-    ApiEnvironment(key: 'local', label: 'Local (simulator)', baseUrl: 'http://localhost/api'),
+    ApiEnvironment(key: 'local', label: 'Local', baseUrl: 'http://localhost/api'),
   ],
+);
+
+// main()
+await DevTools.load();
+await apiConfig.load();
+
+// HTTP client, per request
+options.baseUrl = apiConfig.baseUrl;
+
+// Login page
+DevMenuTrigger(config: apiConfig, child: const Logo());   // long press opens the picker
+ServerBadge(config: apiConfig);                            // "Server: Local" when not on production
+DevLoginButton(                                            // seeded accounts, hidden on production
+  config: apiConfig,
+  accounts: const [DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password')],
+  login: (context, account) => context.read<UserState>().login(account.email, account.password),
 );
 ```
 
-`main.dart`, before the first request:
+The picker also accepts a typed URL (a `.local` name or an IP; `http://` and
+`/api` are filled in). Picks persist across restarts. `--dart-define=API_URL=…`
+sets the default for a debug build. Pass `entries:` to `DevMenuTrigger` to add
+your own rows; the long press then opens a menu with Server first. Swedish
+texts: `strings: const DevToolsStrings.sv()`.
 
-```dart
-await DevTools.load();
-await apiConfig.load();
-```
-
-HTTP client – read the URL per request so a switch applies immediately:
-
-```dart
-onRequest: (options, handler) {
-  options.baseUrl = apiConfig.baseUrl;
-  ...
-}
-```
-
-Login page:
-
-```dart
-Column(children: [
-  DevMenuTrigger(
-    config: apiConfig,
-    entries: [
-      DevMenuEntry(label: 'Log in as test user', icon: Icons.person, onTap: (ctx) async { ... }),
-    ],
-    child: const Logo(),
-  ),
-  ServerBadge(config: apiConfig),
-])
-```
-
-Test login with seeded accounts (button under the logo, or `devLoginEntry(...)`
-in `DevMenuTrigger.entries`):
-
-```dart
-DevLoginButton(
-  config: apiConfig,
-  accounts: const [
-    DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password'),
-  ],
-  login: (context, account) async {
-    final user = await api.login(account.email, account.password);
-    if (user == null) return false;
-    if (context.mounted) context.read<UserState>().setUser(user);
-    return true;
-  },
-)
-```
-
-Pass `strings: const DevToolsStrings.sv()` to the widgets for Swedish.
-
-## Checks
+## Develop
 
 ```bash
 flutter analyze && flutter test
