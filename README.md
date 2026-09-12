@@ -1,4 +1,4 @@
-# rootpi_devtools
+# url_devtools
 
 Runtime API server switching plus a hidden developer menu, shared by the
 Rootpi Flutter apps (mapp_time, lekaos). Private; not on pub.dev.
@@ -22,17 +22,17 @@ What you get:
 
 ```yaml
 dependencies:
-  rootpi_devtools:
-    path: ../rootpi_devtools
+  url_devtools:
+    path: ../url_devtools
 ```
 
 or pinned to a tag of the private repo (needs git access on the machine that builds):
 
 ```yaml
 dependencies:
-  rootpi_devtools:
+  url_devtools:
     git:
-      url: git@github.com:Rootpie-Studios/rootpi_devtools.git
+      url: git@github.com:Rootpie-Studios/url_devtools.git
       ref: v0.1.0
 ```
 

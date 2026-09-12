@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rootpi_devtools/rootpi_devtools.dart';
+import 'package:url_devtools/url_devtools.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const ApiEnvironment production = ApiEnvironment(
