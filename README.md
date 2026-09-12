@@ -15,6 +15,9 @@ What you get:
   menu with the Server row plus whatever the app adds (test login, data
   generators, cache wipes). With no entries the long press opens the server
   picker directly, so an app that only needs server switching gets no extra step.
+- `DevLoginButton` / `devLoginEntry` / `DevAccount` – "Test login" as a button
+  (shown only on a non-production server) or as a menu entry: pick a seeded
+  account, the app's own `login` callback does the rest.
 - `DevToolsStrings` – English by default, `DevToolsStrings.sv()` for Swedish.
 
 ## Use in an app
@@ -78,6 +81,24 @@ Column(children: [
   ),
   ServerBadge(config: apiConfig),
 ])
+```
+
+Test login with seeded accounts (button under the logo, or `devLoginEntry(...)`
+in `DevMenuTrigger.entries`):
+
+```dart
+DevLoginButton(
+  config: apiConfig,
+  accounts: const [
+    DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password'),
+  ],
+  login: (context, account) async {
+    final user = await api.login(account.email, account.password);
+    if (user == null) return false;
+    if (context.mounted) context.read<UserState>().setUser(user);
+    return true;
+  },
+)
 ```
 
 Pass `strings: const DevToolsStrings.sv()` to the widgets for Swedish.

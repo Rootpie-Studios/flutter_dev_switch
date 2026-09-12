@@ -13,6 +13,10 @@ class DevToolsStrings {
   final String cancel;
   final String use;
   final String devMenuTitle;
+  final String devLogin;
+  final String devLoginTitle;
+  final String devLoggingIn;
+  final String devLoginFailed;
 
   const DevToolsStrings({
     this.server = 'Server',
@@ -29,6 +33,10 @@ class DevToolsStrings {
     this.cancel = 'Cancel',
     this.use = 'Use',
     this.devMenuTitle = 'Developer',
+    this.devLogin = 'Test login',
+    this.devLoginTitle = 'Test login on {server}',
+    this.devLoggingIn = 'Logging in…',
+    this.devLoginFailed = 'Test login as {email} failed on {server}.',
   });
 
   const DevToolsStrings.sv()
@@ -47,5 +55,10 @@ class DevToolsStrings {
         cancel: 'Avbryt',
         use: 'Använd',
         devMenuTitle: 'Utvecklare',
+        devLogin: 'Testinloggning',
+        devLoginTitle: 'Testinloggning på {server}',
+        devLoggingIn: 'Loggar in…',
+        devLoginFailed:
+            'Testinloggningen som {email} misslyckades på {server}.',
       );
 }
