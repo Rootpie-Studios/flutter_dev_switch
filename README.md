@@ -1,4 +1,4 @@
-# url_devtools
+# flutter_dev_switch
 
 Runtime API server switching plus a hidden developer menu, shared by the
 Rootpi Flutter apps (mapp_time, lekaos). Private; not on pub.dev.
@@ -26,17 +26,17 @@ What you get:
 
 ```yaml
 dependencies:
-  url_devtools:
-    path: ../url_devtools
+  flutter_dev_switch:
+    path: ../flutter_dev_switch
 ```
 
 or pinned to a tag of the private repo (needs git access on the machine that builds):
 
 ```yaml
 dependencies:
-  url_devtools:
+  flutter_dev_switch:
     git:
-      url: git@github.com:Rootpie-Studios/url_devtools.git
+      url: git@github.com:Rootpie-Studios/flutter_dev_switch.git
       ref: v0.1.0
 ```
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:url_devtools/url_devtools.dart';
+import 'package:flutter_dev_switch/flutter_dev_switch.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const ApiEnvironment production = ApiEnvironment(
