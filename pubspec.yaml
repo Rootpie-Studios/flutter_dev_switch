@@ -1,6 +1,6 @@
 name: flutter_dev_switch
 description: Runtime API server switching, a TestFlight/debug-only dev menu and the widgets that open them. Shared by the Rootpi Flutter apps.
-version: 0.2.0
+version: 0.3.0
 publish_to: none
 
 environment:
@@ -8,6 +8,7 @@ environment:
   flutter: ">=3.32.0"
 
 dependencies:
+  dio: ^5.8.0
   flutter:
     sdk: flutter
   package_info_plus: '>=9.0.0 <11.0.0'

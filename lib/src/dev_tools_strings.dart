@@ -17,6 +17,21 @@ class DevToolsStrings {
   final String devLoginTitle;
   final String devLoggingIn;
   final String devLoginFailed;
+  final String slowRequests;
+  final String slowRequestsHelp;
+  final String slowPrefix;
+  final String off;
+  final String seconds;
+  final String latency;
+  final String instant;
+  final String offline;
+  final String offlineHelp;
+  final String refuseWrites;
+  final String refuseWritesHelp;
+  final String requestCount;
+  final String noRequestsYet;
+  final String clear;
+  final String offlineStatus;
 
   const DevToolsStrings({
     this.server = 'Server',
@@ -37,6 +52,23 @@ class DevToolsStrings {
     this.devLoginTitle = 'Test login on {server}',
     this.devLoggingIn = 'Logging in…',
     this.devLoginFailed = 'Test login as {email} failed on {server}.',
+    this.slowRequests = 'Slow requests',
+    this.slowRequestsHelp =
+        'Every request waits this long before it is sent, to look at '
+        'loading states.',
+    this.slowPrefix = 'Slow: ',
+    this.off = 'Off',
+    this.seconds = '{n} s',
+    this.latency = 'Latency',
+    this.instant = 'Instant',
+    this.offline = 'Offline',
+    this.offlineHelp = 'Every request fails to connect',
+    this.refuseWrites = 'Refuse writes',
+    this.refuseWritesHelp = 'Writes get a 500; reads still work',
+    this.requestCount = '{n} requests',
+    this.noRequestsYet = 'Nothing yet. Open a screen and save something.',
+    this.clear = 'Clear',
+    this.offlineStatus = 'offline',
   });
 
   const DevToolsStrings.sv()
@@ -60,5 +92,22 @@ class DevToolsStrings {
         devLoggingIn: 'Loggar in…',
         devLoginFailed:
             'Testinloggningen som {email} misslyckades på {server}.',
+        slowRequests: 'Långsamma anrop',
+        slowRequestsHelp:
+            'Varje anrop väntar så här länge innan det skickas, för att '
+            'titta på laddningslägen.',
+        slowPrefix: 'Långsam: ',
+        off: 'Av',
+        seconds: '{n} s',
+        latency: 'Latens',
+        instant: 'Direkt',
+        offline: 'Offline',
+        offlineHelp: 'Varje anrop misslyckas att ansluta',
+        refuseWrites: 'Neka skrivningar',
+        refuseWritesHelp: 'Skrivningar får 500; läsningar fungerar',
+        requestCount: '{n} anrop',
+        noRequestsYet: 'Inget än. Öppna en skärm och spara något.',
+        clear: 'Rensa',
+        offlineStatus: 'offline',
       );
 }

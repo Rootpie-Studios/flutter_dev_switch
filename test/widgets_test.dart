@@ -56,18 +56,59 @@ void main() {
     onTap: _nothing,
   );
 
-  testWidgets('no entries: long press opens the picker directly', (
+  Future<void> openServerPicker(WidgetTester tester) async {
+    await openMenu(tester);
+    await tester.tap(find.text('Server'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('no entries: long press opens the menu with its own rows', (
     tester,
   ) async {
     await pumpLogin(tester);
     await openMenu(tester);
-    expect(find.text('Developer'), findsNothing);
+    expect(find.text('Developer'), findsOneWidget);
+    expect(find.text('Server'), findsOneWidget);
+    expect(find.text('Slow requests'), findsOneWidget);
+    expect(find.text('Off'), findsOneWidget, reason: 'slowdown subtitle');
+
+    await tester.tap(find.text('Server'));
+    await tester.pumpAndSettle();
+    expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
     expect(find.text('Dev'), findsOneWidget);
     expect(find.text('Custom address'), findsOneWidget);
     await tester.tap(find.text('Dev'));
     await tester.pumpAndSettle();
     expect(config.picked, dev);
     expect(find.text('Server: Dev'), findsOneWidget, reason: 'badge');
+  });
+
+  testWidgets('slow requests: picked in the menu, shown in the badge', (
+    tester,
+  ) async {
+    await pumpLogin(tester);
+    await openMenu(tester);
+    await tester.tap(find.text('Slow requests'));
+    await tester.pumpAndSettle();
+    expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
+    expect(find.text('Off'), findsOneWidget);
+    await tester.tap(find.text('3 s'));
+    await tester.pumpAndSettle();
+    expect(config.slowdown, const Duration(seconds: 3));
+    expect(find.text('Slow: 3 s'), findsOneWidget, reason: 'badge');
+
+    await config.pick(dev);
+    await tester.pumpAndSettle();
+    expect(find.text('Server: Dev · Slow: 3 s'), findsOneWidget);
+
+    await openMenu(tester);
+    expect(find.text('3 s'), findsOneWidget, reason: 'slowdown subtitle');
+    await tester.tap(find.text('Slow requests'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Off'));
+    await tester.pumpAndSettle();
+    expect(config.slowdown, Duration.zero);
+    expect(find.text('Server: Dev'), findsOneWidget);
   });
 
   testWidgets(
@@ -95,7 +136,7 @@ void main() {
     tester,
   ) async {
     await pumpLogin(tester);
-    await openMenu(tester);
+    await openServerPicker(tester);
 
     await tester.tap(find.text('Custom address'));
     await tester.pumpAndSettle();
@@ -109,7 +150,7 @@ void main() {
     expect(config.baseUrl, 'http://192.168.55.6/api');
     expect(find.text('Server: http://192.168.55.6/api'), findsOneWidget);
 
-    await openMenu(tester);
+    await openServerPicker(tester);
     await tester.tap(find.text('Custom address'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'http://');

@@ -4,6 +4,7 @@ import 'api_config.dart';
 import 'dev_tools.dart';
 import 'dev_tools_strings.dart';
 import 'server_picker.dart';
+import 'slowdown_picker.dart';
 
 /// One app-specific row in the [DevMenu]: a test login, a data generator,
 /// a cache wipe. [onTap] runs after the menu has closed.
@@ -22,12 +23,10 @@ class DevMenuEntry {
 }
 
 /// The hidden developer menu: a "Server" row that opens the [ServerPicker],
-/// followed by whatever [entries] the app adds. Open it with [show], or
-/// wrap a logo in [DevMenuTrigger] so a long press opens it. Shows nothing
-/// and does nothing unless [DevTools.enabled].
-///
-/// With no [entries] there is nothing to choose between, so [show] opens
-/// the [ServerPicker] straight away instead of a one-row menu.
+/// a "Slow requests" row that opens the [SlowdownPicker], then whatever
+/// [entries] the app adds. Open it with [show] from anywhere (a settings
+/// page, say), or wrap a logo in [DevMenuTrigger] so a long press opens it.
+/// Shows nothing and does nothing unless [DevTools.enabled].
 class DevMenu extends StatelessWidget {
   final ApiConfig config;
   final List<DevMenuEntry> entries;
@@ -50,14 +49,6 @@ class DevMenu extends StatelessWidget {
     String customExample = 'http://my-macbook.local/api',
   }) {
     if (!DevTools.enabled) return Future<void>.value();
-    if (entries.isEmpty) {
-      return ServerPicker.show(
-        context,
-        config: config,
-        strings: strings,
-        customExample: customExample,
-      );
-    }
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -99,18 +90,26 @@ class DevMenu extends StatelessWidget {
               title: Text(strings.server),
               subtitle: Text(config.baseUrl),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                // Swap the menu for the picker instead of stacking sheets.
-                final NavigatorState nav = Navigator.of(context);
-                final BuildContext root = nav.context;
-                nav.pop();
-                ServerPicker.show(
+              onTap: () => _swapFor(
+                context,
+                (root) => ServerPicker.show(
                   root,
                   config: config,
                   strings: strings,
                   customExample: customExample,
-                );
-              },
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.hourglass_bottom_rounded),
+              title: Text(strings.slowRequests),
+              subtitle: Text(formatSlowdown(config.slowdown, strings)),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _swapFor(
+                context,
+                (root) =>
+                    SlowdownPicker.show(root, config: config, strings: strings),
+              ),
             ),
             for (final DevMenuEntry e in entries)
               ListTile(
@@ -129,6 +128,15 @@ class DevMenu extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Close the menu and open [sheet] in its place, instead of stacking one
+/// sheet on another.
+void _swapFor(BuildContext context, void Function(BuildContext root) sheet) {
+  final NavigatorState nav = Navigator.of(context);
+  final BuildContext root = nav.context;
+  nav.pop();
+  sheet(root);
 }
 
 /// Wraps a logo or wordmark so that a long press opens the [DevMenu].

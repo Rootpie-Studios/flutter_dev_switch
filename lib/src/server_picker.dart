@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'api_config.dart';
 import 'api_environment.dart';
 import 'dev_tools_strings.dart';
+import 'slowdown_picker.dart';
 
 /// The hidden server switch for testers. Lists the known servers plus a URL
 /// of one's own (a developer machine on the LAN, best by its `.local`
@@ -222,8 +223,9 @@ class _CustomUrlDialogState extends State<_CustomUrlDialog> {
   );
 }
 
-/// Small pill saying which server is in use; nothing when it is production
-/// with no pick, which is the normal case. Colour defaults to the theme's
+/// Small pill saying which server is in use and whether requests are being
+/// slowed down; nothing when it is production with no pick and no
+/// slowdown, which is the normal case. Colour defaults to the theme's
 /// primary; pass [color] to match a logo.
 class ServerBadge extends StatelessWidget {
   final ApiConfig config;
@@ -241,7 +243,12 @@ class ServerBadge extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: config,
     builder: (context, _) {
-      if (!config.isNonProduction) return const SizedBox.shrink();
+      final List<String> parts = [
+        if (config.isNonProduction) '${strings.serverPrefix}${config.label}',
+        if (config.hasSlowdown)
+          '${strings.slowPrefix}${formatSlowdown(config.slowdown, strings)}',
+      ];
+      if (parts.isEmpty) return const SizedBox.shrink();
       final Color c = color ?? Theme.of(context).colorScheme.primary;
       return Container(
         margin: const EdgeInsets.only(top: 8),
@@ -251,7 +258,7 @@ class ServerBadge extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
-          '${strings.serverPrefix}${config.label}',
+          parts.join(' · '),
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c),
         ),
       );

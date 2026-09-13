@@ -165,4 +165,42 @@ void main() {
     await again.load();
     expect(again.picked, isNull, reason: 'the pick was dropped, not hidden');
   });
+
+  test(
+    'the slowdown is kept across restarts, cleared by a store build',
+    () async {
+      await config.load();
+      expect(config.slowdown, Duration.zero);
+      expect(config.hasSlowdown, isFalse);
+
+      await config.pickSlowdown(const Duration(seconds: 3));
+      final ApiConfig fresh = newConfig();
+      await fresh.load();
+      expect(fresh.slowdown, const Duration(seconds: 3));
+      expect(fresh.hasSlowdown, isTrue);
+
+      await fresh.pickSlowdown(Duration.zero);
+      final ApiConfig off = newConfig();
+      await off.load();
+      expect(off.hasSlowdown, isFalse, reason: 'removed from prefs');
+
+      await off.pickSlowdown(const Duration(seconds: 1));
+      DevTools.enabled = false;
+      final ApiConfig store = newConfig();
+      await store.load();
+      expect(store.slowdown, Duration.zero);
+      DevTools.enabled = true;
+      final ApiConfig after = newConfig();
+      await after.load();
+      expect(after.slowdown, Duration.zero, reason: 'the store build wiped it');
+    },
+  );
+
+  test('a slowdown reads as Off or seconds', () {
+    const DevToolsStrings en = DevToolsStrings();
+    expect(formatSlowdown(Duration.zero, en), 'Off');
+    expect(formatSlowdown(const Duration(seconds: 3), en), '3 s');
+    expect(formatSlowdown(const Duration(milliseconds: 500), en), '0.5 s');
+    expect(formatSlowdown(Duration.zero, const DevToolsStrings.sv()), 'Av');
+  });
 }

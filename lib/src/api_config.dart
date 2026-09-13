@@ -19,6 +19,10 @@ import 'dev_tools.dart';
 /// Read [baseUrl] per request (in the HTTP client's interceptor) so a change
 /// applies to every request at once without recreating anything. [load]
 /// must have completed before the first request; await it in `main`.
+///
+/// Also carries the [slowdown] testers pick in the dev menu: how long every
+/// request waits before it goes out, for looking at loading states. Read
+/// it per request as well, and await it before sending.
 class ApiConfig extends ChangeNotifier {
   /// The servers testers can pick from, in the order they are listed.
   final List<ApiEnvironment> environments;
@@ -34,6 +38,7 @@ class ApiConfig extends ChangeNotifier {
 
   final String _pickedKey;
   final String _customKey;
+  final String _slowdownKey;
 
   ApiConfig({
     required this.environments,
@@ -43,10 +48,12 @@ class ApiConfig extends ChangeNotifier {
   }) : assert(environments.isNotEmpty, 'give at least one environment'),
        production = production ?? environments.first,
        _pickedKey = '${prefsPrefix}_environment',
-       _customKey = '${prefsPrefix}_custom_url';
+       _customKey = '${prefsPrefix}_custom_url',
+       _slowdownKey = '${prefsPrefix}_slowdown_ms';
 
   ApiEnvironment? _picked;
   String? _custom;
+  Duration _slowdown = Duration.zero;
 
   /// The known server picked in the app, if any.
   ApiEnvironment? get picked => _picked;
@@ -73,6 +80,13 @@ class ApiConfig extends ChangeNotifier {
   /// Short human label for what is in use, for the badge and the picker.
   String get label => environment?.label ?? baseUrl;
 
+  /// How long every request waits before it is sent. Zero unless picked in
+  /// the dev menu ([SlowdownPicker]); always zero in a store install.
+  Duration get slowdown => _slowdown;
+
+  /// Requests are being held back: what the badge shows.
+  bool get hasSlowdown => _slowdown > Duration.zero;
+
   ApiEnvironment? _match(String url) =>
       environments.where((e) => e.baseUrl == url).firstOrNull;
 
@@ -86,16 +100,23 @@ class ApiConfig extends ChangeNotifier {
       if (!DevTools.enabled) {
         _picked = null;
         _custom = null;
-        await Future.wait([p.remove(_pickedKey), p.remove(_customKey)]);
+        _slowdown = Duration.zero;
+        await Future.wait([
+          p.remove(_pickedKey),
+          p.remove(_customKey),
+          p.remove(_slowdownKey),
+        ]);
         notifyListeners();
         return;
       }
       final String? key = p.getString(_pickedKey);
       _picked = environments.where((e) => e.key == key).firstOrNull;
       _custom = _picked == null ? normalizeUrl(p.getString(_customKey)) : null;
+      _slowdown = Duration(milliseconds: p.getInt(_slowdownKey) ?? 0);
     } catch (_) {
       _picked = null;
       _custom = null;
+      _slowdown = Duration.zero;
     }
     notifyListeners();
   }
@@ -129,6 +150,18 @@ class ApiConfig extends ChangeNotifier {
     return true;
   }
 
+  /// Hold every request back by [delay] before sending it; zero to stop.
+  /// Kept in preferences like a server pick, so it survives a restart, and
+  /// shown in the [ServerBadge] so it is not forgotten.
+  Future<void> pickSlowdown(
+    Duration delay, [
+    Future<SharedPreferences>? prefs,
+  ]) async {
+    _slowdown = delay.isNegative ? Duration.zero : delay;
+    notifyListeners();
+    await _save(prefs);
+  }
+
   /// A typed URL made usable: trimmed, `http://` assumed when no scheme
   /// was given, `/api` appended when no path was, trailing slash dropped.
   /// Null when there is no host in it.
@@ -160,6 +193,11 @@ class ApiConfig extends ChangeNotifier {
       } else {
         await p.remove(_customKey);
       }
+      if (hasSlowdown) {
+        await p.setInt(_slowdownKey, _slowdown.inMilliseconds);
+      } else {
+        await p.remove(_slowdownKey);
+      }
     } catch (_) {
       // Preferences failing only means the pick does not survive a restart.
     }
@@ -170,5 +208,6 @@ class ApiConfig extends ChangeNotifier {
   void reset() {
     _picked = null;
     _custom = null;
+    _slowdown = Duration.zero;
   }
 }
