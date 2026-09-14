@@ -9,8 +9,8 @@
 /// 3. Read `apiConfig.baseUrl` per request in the HTTP client's interceptor,
 ///    and await `apiConfig.slowdown` there too so the dev menu's request
 ///    slowdown applies.
-/// 4. Install a [DevShell] in `MaterialApp.builder`: a triple tap on the top
-///    trailing corner, a shake, or Ctrl+Shift+D opens the menu on every
+/// 4. Install a [DevShell] in `MaterialApp.builder`: a triple tap on the
+///    status bar's trailing end, a shake, or Ctrl+Shift+D opens the menu on every
 ///    screen. Add app-specific [DevMenuEntry]s for anything else testers
 ///    need. [DevMenuTrigger] (a long press on a logo) and [DevMenu.show]
 ///    (e.g. from settings) are further ways in, with a [ServerBadge] to keep
