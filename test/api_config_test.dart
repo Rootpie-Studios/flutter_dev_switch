@@ -37,12 +37,21 @@ void main() {
     config = newConfig();
   });
 
-  test('production is the default and shows no badge', () async {
+  test('production is the default', () async {
     await config.load();
     expect(config.baseUrl, production.baseUrl);
     expect(config.environment, production);
     expect(config.isNonProduction, isFalse);
     expect(config.picked, isNull);
+  });
+
+  test('the custom example has a default and can be set', () {
+    expect(newConfig().customExample, 'http://my-macbook.local/api');
+    final ApiConfig c = ApiConfig(
+      environments: const [production],
+      customExample: 'http://dev-box.local:8000/api',
+    );
+    expect(c.customExample, 'http://dev-box.local:8000/api');
   });
 
   test('the first environment is production unless told otherwise', () {

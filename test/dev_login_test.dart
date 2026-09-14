@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,14 +25,14 @@ const List<DevAccount> accounts = [
 void main() {
   late ApiConfig config;
   final List<DevAccount> attempted = [];
-  bool succeed = true;
+  Future<String?> Function(DevAccount account) outcome = (_) async => null;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     DevTools.enabled = true;
     config = ApiConfig(environments: const [production, dev], defineUrl: '');
     attempted.clear();
-    succeed = true;
+    outcome = (_) async => null;
   });
 
   Future<void> pump(WidgetTester tester) => tester.pumpWidget(
@@ -40,9 +42,9 @@ void main() {
         devLoginEntry(
           config: config,
           accounts: accounts,
-          login: (_, account) async {
+          login: (_, account) {
             attempted.add(account);
-            return succeed;
+            return outcome(account);
           },
         ),
       ],
@@ -79,8 +81,8 @@ void main() {
     expect(find.textContaining('failed'), findsNothing);
   });
 
-  testWidgets('a failed login says so', (tester) async {
-    succeed = false;
+  testWidgets('a failed login says why', (tester) async {
+    outcome = (_) async => 'Wrong password.';
     await config.pick(dev);
     await pump(tester);
     await openMenu(tester);
@@ -89,9 +91,43 @@ void main() {
     await tester.tap(find.text('Admin'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Test login as admin@example.com failed on Dev.'),
+      find.text(
+        'Test login as admin@example.com failed on Dev: Wrong password.',
+      ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a handler that throws is reported, not rethrown', (
+    tester,
+  ) async {
+    outcome = (_) async => throw StateError('no network');
+    await config.pick(dev);
+    await pump(tester);
+    await openMenu(tester);
+    await tester.tap(find.text('Test login'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Admin'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('no network'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the screen is blocked while logging in', (tester) async {
+    final Completer<String?> pending = Completer<String?>();
+    outcome = (_) => pending.future;
+    await config.pick(dev);
+    await pump(tester);
+    await openMenu(tester);
+    await tester.tap(find.text('Test login'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Admin'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Logging in as admin@example.com…'), findsOneWidget);
+    pending.complete(null);
+    await tester.pumpAndSettle();
+    expect(find.text('Logging in as admin@example.com…'), findsNothing);
   });
 
   testWidgets('store build shows nothing even off production', (tester) async {

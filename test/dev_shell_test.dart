@@ -13,7 +13,6 @@ void main() {
     navigatorKey: navKey,
     builder: (context, child) => DevShell(
       navigatorKey: navKey,
-      shake: false,
       open: (_) async => opened++,
       child: child!,
     ),

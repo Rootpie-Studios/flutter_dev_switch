@@ -97,9 +97,7 @@ class MockRequestLog extends StatelessWidget {
         children: [
           ListTile(
             dense: true,
-            title: Text(
-              strings.requestCount.replaceFirst('{n}', '${requests.length}'),
-            ),
+            title: Text(strings.requestCount.fill({'n': '${requests.length}'})),
             trailing: TextButton(
               onPressed: server.clearRequests,
               child: Text(strings.clear),

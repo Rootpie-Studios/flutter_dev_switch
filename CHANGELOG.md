@@ -1,3 +1,23 @@
+## 0.8.0
+
+- The shake is gone: the shell opens the menu on a held press or
+  Ctrl+Shift+D only. Drops the dependency on sensors_plus. `DevShell.shake`
+  no longer exists.
+- `DevLoginHandler` returns `Future<String?>`: null for success, otherwise
+  the reason, which the tester now sees in the snackbar. A handler that
+  throws is reported the same way instead of escaping. A "logging in"
+  dialog blocks the screen while the login runs.
+- `runDevReset` attempts every step even when one fails and names the
+  failures afterwards, instead of stopping at the first exception.
+- `ApiConfig.customExample` replaces the `customExample` parameter that
+  `DevMenu`, `DevMenu.show` and `ServerPicker` used to take.
+- `showDevSheet`, `DevSheetBody`, `DevChoiceTile` and `closeThen`: the one
+  bottom sheet, body and radio row every part of the menu is built from,
+  usable by app entries too.
+- Preferences failures are logged with `debugPrint` instead of swallowed.
+- Removed: `DevTools.isSimulator` and the strings `serverPrefix` and
+  `slowPrefix` (unused since the badge went in 0.6).
+
 ## 0.7.0
 
 - `DevFaults`, a Dio interceptor for the live API: the slowdown, and the

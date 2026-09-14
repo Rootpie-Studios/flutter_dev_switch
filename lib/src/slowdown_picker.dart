@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api_config.dart';
+import 'dev_sheet.dart';
 import 'dev_tools_strings.dart';
 
 /// The request slowdown for testers: every request waits the picked time
@@ -35,68 +36,31 @@ class SlowdownPicker extends StatelessWidget {
     required ApiConfig config,
     DevToolsStrings strings = const DevToolsStrings(),
     List<Duration> choices = defaultChoices,
-  }) => showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-    ),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+  }) => showDevSheet<void>(
+    context,
     builder: (_) =>
         SlowdownPicker(config: config, strings: strings, choices: choices),
   );
 
   @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: config,
-      builder: (context, _) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Text(
-                  strings.slowRequests,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text(
-                  strings.slowRequestsHelp,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              for (final Duration d in _rows(config.slowdown))
-                ListTile(
-                  leading: Icon(
-                    d == config.slowdown
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
-                    color: d == config.slowdown
-                        ? colors.primary
-                        : colors.outline,
-                  ),
-                  title: Text(formatSlowdown(d, strings)),
-                  onTap: () async {
-                    await config.pickSlowdown(d);
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                ),
-            ],
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: config,
+    builder: (context, _) => DevSheetBody(
+      title: strings.slowRequests,
+      help: strings.slowRequestsHelp,
+      children: [
+        for (final Duration d in _rows(config.slowdown))
+          DevChoiceTile(
+            selected: d == config.slowdown,
+            title: formatSlowdown(d, strings),
+            onTap: () async {
+              await config.pickSlowdown(d);
+              if (context.mounted) Navigator.of(context).pop();
+            },
           ),
-        ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
 
   /// [choices], plus the current pick when it is not one of them, so what
   /// is in use can always be seen and switched off.
@@ -109,5 +73,5 @@ String formatSlowdown(Duration delay, DevToolsStrings strings) {
   if (delay <= Duration.zero) return strings.off;
   final double s = delay.inMilliseconds / 1000;
   final String n = s == s.roundToDouble() ? s.toInt().toString() : '$s';
-  return strings.seconds.replaceFirst('{n}', n);
+  return strings.seconds.fill({'n': n});
 }

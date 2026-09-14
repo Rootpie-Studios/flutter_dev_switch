@@ -8,6 +8,7 @@ import 'widgets_test.dart' show shellApp, holdOn;
 void main() {
   late ApiConfig config;
   final List<String> ran = [];
+  bool cacheFails = false;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({
@@ -16,6 +17,7 @@ void main() {
     });
     DevTools.enabled = true;
     ran.clear();
+    cacheFails = false;
     config = ApiConfig(
       environments: const [
         ApiEnvironment(key: 'production', label: 'P', baseUrl: 'https://p'),
@@ -33,7 +35,11 @@ void main() {
           steps: [
             DevResetStep('Session', () async => ran.add('session')),
             DevResetStep.preferences(config),
-            DevResetStep('Cache', () async => ran.add('cache')),
+            DevResetStep('Cache', () async {
+              if (cacheFails) throw StateError('locked');
+              ran.add('cache');
+            }),
+            DevResetStep('Photos', () async => ran.add('photos')),
           ],
         ),
       ],
@@ -70,11 +76,25 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Clear'));
       await tester.pumpAndSettle();
-      expect(ran, ['session', 'cache']);
+      expect(ran, ['session', 'cache', 'photos']);
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('app_setting'), isNull);
       expect(prefs.getString('api_environment'), 'dev', reason: 'kept');
       expect(find.textContaining('Restart the app'), findsOneWidget);
     },
   );
+
+  testWidgets('a failing step is named; the others still run', (tester) async {
+    cacheFails = true;
+    await pump(tester);
+    await openMenu(tester);
+    await tester.tap(find.text('Reset app data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+    expect(ran, ['session', 'photos']);
+    expect(find.textContaining('Could not wipe Cache'), findsOneWidget);
+    expect(find.textContaining('Restart the app'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

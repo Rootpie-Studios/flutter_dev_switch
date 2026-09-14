@@ -216,7 +216,6 @@ Widget shellApp({
     navigatorKey: navKey,
     builder: (context, child) => DevShell(
       navigatorKey: navKey,
-      shake: false,
       open: (context) => DevMenu.show(
         context,
         config: config,

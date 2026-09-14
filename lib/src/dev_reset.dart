@@ -38,7 +38,8 @@ DevMenuEntry devResetEntry({
       runDevReset(context, steps: steps, strings: strings),
 );
 
-/// What [devResetEntry] runs.
+/// What [devResetEntry] runs. Every step is attempted even when one
+/// fails; the failures are named afterwards.
 Future<void> runDevReset(
   BuildContext context, {
   required List<DevResetStep> steps,
@@ -66,8 +67,21 @@ Future<void> runDevReset(
     ),
   );
   if (confirmed != true) return;
+
+  final List<String> failed = [];
   for (final DevResetStep step in steps) {
-    await step.run();
+    try {
+      await step.run();
+    } catch (e) {
+      debugPrint('Dev reset: ${step.label} failed: $e');
+      failed.add(
+        strings.resetStepFailed.fill({'step': step.label, 'reason': '$e'}),
+      );
+    }
   }
-  messenger.showSnackBar(SnackBar(content: Text(strings.resetDone)));
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(failed.isEmpty ? strings.resetDone : failed.join('\n')),
+    ),
+  );
 }

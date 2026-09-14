@@ -2,118 +2,73 @@ import 'package:flutter/material.dart';
 
 import 'api_config.dart';
 import 'api_environment.dart';
+import 'dev_sheet.dart';
 import 'dev_tools_strings.dart';
 
-/// The hidden server switch for testers. Lists the known servers plus a URL
-/// of one's own (a developer machine on the LAN, best by its `.local`
-/// name), marks the one in use, and remembers the choice across restarts.
+/// The server switch for testers. Lists the known servers plus a URL of
+/// one's own (a developer machine on the LAN, best by its `.local` name),
+/// marks the one in use, and remembers the choice across restarts.
 ///
-/// Open it with [show]; nothing on screen should hint that it exists. The
-/// [DevMenu]'s Server row shows the pick.
+/// Opened from the [DevMenu], whose Server row shows the pick; [show] for
+/// anywhere else.
 class ServerPicker extends StatelessWidget {
   final ApiConfig config;
   final DevToolsStrings strings;
-
-  /// Prefilled into the custom-URL dialog, so the common case (the
-  /// developer's own machine) is one tap away.
-  final String customExample;
 
   const ServerPicker({
     super.key,
     required this.config,
     this.strings = const DevToolsStrings(),
-    this.customExample = 'http://my-macbook.local/api',
   });
 
   static Future<void> show(
     BuildContext context, {
     required ApiConfig config,
     DevToolsStrings strings = const DevToolsStrings(),
-    String customExample = 'http://my-macbook.local/api',
-  }) => showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    // Without this the sheet is capped at nine sixteenths of the screen,
-    // which on a phone silently cuts off the rows at the bottom.
-    isScrollControlled: true,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-    ),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) => ServerPicker(
-      config: config,
-      strings: strings,
-      customExample: customExample,
-    ),
+  }) => showDevSheet<void>(
+    context,
+    builder: (_) => ServerPicker(config: config, strings: strings),
   );
 
   @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: config,
-      builder: (context, _) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text(
-                  strings.server,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              for (final ApiEnvironment e in config.environments)
-                ListTile(
-                  leading: Icon(
-                    e == config.environment
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
-                    color: e == config.environment
-                        ? colors.primary
-                        : colors.outline,
-                  ),
-                  title: Text(e.label),
-                  subtitle: Text(e.baseUrl),
-                  onTap: () async {
-                    await config.pick(e);
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                ),
-              _CustomRow(config, strings, customExample),
-              if (config.hasPick)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: TextButton(
-                    onPressed: () async {
-                      await config.pick(null);
-                      if (context.mounted) Navigator.of(context).pop();
-                    },
-                    child: Text(strings.resetToDefault),
-                  ),
-                ),
-              if (config.defineUrl.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Text(
-                    strings.buildPointsAt.replaceFirst(
-                      '{url}',
-                      config.defineUrl,
-                    ),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-            ],
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: config,
+    builder: (context, _) => DevSheetBody(
+      title: strings.server,
+      children: [
+        for (final ApiEnvironment e in config.environments)
+          DevChoiceTile(
+            selected: e == config.environment,
+            title: e.label,
+            subtitle: e.baseUrl,
+            onTap: () async {
+              await config.pick(e);
+              if (context.mounted) Navigator.of(context).pop();
+            },
           ),
-        ),
-      ),
-    );
-  }
+        _CustomRow(config, strings),
+        if (config.hasPick)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: TextButton(
+              onPressed: () async {
+                await config.pick(null);
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              child: Text(strings.resetToDefault),
+            ),
+          ),
+        if (config.defineUrl.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              strings.buildPointsAt.fill({'url': config.defineUrl}),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+      ],
+    ),
+  );
 }
 
 /// The "own URL" row: shows the typed URL when one is in use, otherwise a
@@ -121,16 +76,15 @@ class ServerPicker extends StatelessWidget {
 class _CustomRow extends StatelessWidget {
   final ApiConfig config;
   final DevToolsStrings strings;
-  final String example;
-  const _CustomRow(this.config, this.strings, this.example);
+  const _CustomRow(this.config, this.strings);
 
   Future<void> _edit(BuildContext context) async {
     final String? url = await showDialog<String>(
       context: context,
       builder: (_) => _CustomUrlDialog(
-        initial: config.custom ?? example,
+        initial: config.custom ?? config.customExample,
         strings: strings,
-        example: example,
+        example: config.customExample,
       ),
     );
     if (url == null || !context.mounted) return;
@@ -144,22 +98,17 @@ class _CustomRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    final bool active = config.custom != null;
-    return ListTile(
-      leading: Icon(
-        active
-            ? Icons.radio_button_checked_rounded
-            : Icons.radio_button_off_rounded,
-        color: active ? colors.primary : colors.outline,
-      ),
-      title: Text(strings.customAddress),
-      subtitle: Text(config.custom ?? '${strings.customAddressHint}$example'),
-      trailing: Icon(Icons.edit_outlined, color: colors.outline),
-      onTap: () => _edit(context),
-    );
-  }
+  Widget build(BuildContext context) => DevChoiceTile(
+    selected: config.custom != null,
+    title: strings.customAddress,
+    subtitle:
+        config.custom ?? '${strings.customAddressHint}${config.customExample}',
+    trailing: Icon(
+      Icons.edit_outlined,
+      color: Theme.of(context).colorScheme.outline,
+    ),
+    onTap: () => _edit(context),
+  );
 }
 
 class _CustomUrlDialog extends StatefulWidget {

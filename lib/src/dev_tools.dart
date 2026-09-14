@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -30,12 +28,6 @@ abstract final class DevTools {
       _enabled = false;
     }
   }
-
-  /// Running in the iOS simulator.
-  static bool get isSimulator =>
-      !kIsWeb &&
-      Platform.isIOS &&
-      Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
 
   /// For tests.
   @visibleForTesting

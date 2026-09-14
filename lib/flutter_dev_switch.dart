@@ -2,19 +2,21 @@
 /// of a dev catalog (a mock server with knobs, a request log, scenario
 /// rows) for the Rootpi Flutter apps.
 ///
-/// Wire-up of the hidden menu, in this order:
+/// The package never reaches into the app. It owns a state object
+/// ([ApiConfig]) and some widgets; the app composes them:
 ///
 /// 1. Describe the servers once: `final apiConfig = ApiConfig(environments: [...])`.
 /// 2. In `main`, before the first request: `await DevTools.load(); await apiConfig.load();`.
-/// 3. Read `apiConfig.baseUrl` per request in the HTTP client's interceptor,
-///    and add a [DevFaults] interceptor before it, so the menu's slowdown,
-///    "offline" and "refuse writes" apply to the live API.
+/// 3. In the HTTP client, read `apiConfig.baseUrl` per request, and add a
+///    [DevFaults] interceptor in front of the app's own, so the menu's
+///    slowdown, "offline" and "refuse writes" apply to the live API.
 /// 4. Install a [DevShell] in `MaterialApp.builder`: a press held for a
-///    second anywhere, a shake, or Ctrl+Shift+D opens the [DevMenu] on every
+///    second anywhere, or Ctrl+Shift+D, opens the [DevMenu] on every
 ///    screen. Add app-specific [DevMenuEntry]s for anything else testers
 ///    need: [devLoginEntry] with the seeded accounts gets them in on
 ///    non-production servers without typing, and [devResetEntry] wipes
-///    the app's stores as freshly installed.
+///    the app's stores as freshly installed. Both take the app's own
+///    operations as callbacks and report their failures to the tester.
 ///
 /// For a dev catalog (a separate entry point that opens every screen on
 /// bundled data, no server): extend [MockServer] with the app's data, answer
@@ -34,6 +36,7 @@ export 'src/dev_faults.dart';
 export 'src/dev_login.dart';
 export 'src/dev_menu.dart';
 export 'src/dev_reset.dart';
+export 'src/dev_sheet.dart';
 export 'src/dev_shell.dart';
 export 'src/dev_tools.dart';
 export 'src/dev_tools_strings.dart';

@@ -1,10 +1,15 @@
 # flutter_dev_switch
 
 Hidden developer tools for Flutter apps talking to an API: switch server at
-runtime, show which one is in use, slow every request down to look at loading
-states, and log in as a seeded test account. Only
-active in debug builds, builds with `--dart-define=DEV_TOOLS=true`, and
-TestFlight installs; store installs get nothing.
+runtime, slow every request down or fail it to look at loading and error
+states, log in as a seeded test account, wipe the app's data. Only active in
+debug builds, builds with `--dart-define=DEV_TOOLS=true`, and TestFlight
+installs; store installs get nothing.
+
+The package never reaches into the app. It owns one state object
+(`ApiConfig`) and some widgets; the app reads the config in its HTTP client
+and hands the menu callbacks for the few things only the app can do (log in,
+wipe its stores). Failures in those callbacks are shown to the tester.
 
 ## Install
 
@@ -23,8 +28,9 @@ dependencies:
 final apiConfig = ApiConfig(
   environments: const [
     ApiEnvironment(key: 'production', label: 'Production', baseUrl: 'https://example.com/api'),
-    ApiEnvironment(key: 'local', label: 'Local', baseUrl: 'http://localhost/api'),
+    ApiEnvironment(key: 'local', label: 'Local', baseUrl: 'http://localhost:8000/api'),
   ],
+  customExample: 'http://my-macbook.local:8000/api',   // prefilled in the picker's address dialog
 );
 
 // main()
@@ -37,7 +43,7 @@ dio.interceptors.add(DevFaults(apiConfig));   // slowdown, offline, refuse write
 options.baseUrl = apiConfig.baseUrl;
 
 // MaterialApp: the menu from every screen (press and hold anywhere for
-// a second, shake, or Ctrl+Shift+D)
+// a second, or Ctrl+Shift+D)
 MaterialApp(
   navigatorKey: navKey,
   builder: (context, child) => DevShell(
@@ -49,10 +55,10 @@ MaterialApp(
         devLoginEntry(                                   // seeded accounts, not on production
           config: apiConfig,
           accounts: const [DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password')],
-          login: (context, account) => context.read<UserState>().login(account.email, account.password),
+          login: (context, account) => devActions.loginAs(account),   // null when logged in, else why not
         ),
         devResetEntry(steps: [                             // "as freshly installed", after a confirmation
-          DevResetStep('Session', context.read<UserState>().forget),
+          DevResetStep('Session', devActions.forgetSession),
           DevResetStep.preferences(apiConfig),
         ]),
       ],
@@ -62,12 +68,17 @@ MaterialApp(
 );
 ```
 
+`devActions` above stands for whatever object the app builds once from its
+repositories to do these things; keeping them in one place keeps the menu
+file to a list of rows.
+
 The picker also accepts a typed URL (a `.local` name or an IP; `http://` and
 `/api` are filled in). Picks persist across restarts, the request slowdown
-too, and the badge shows both. `--dart-define=API_URL=…` sets the default for
-a debug build. Pass `entries:` to `DevMenu.show` to add your own rows after
-Server and Slow requests. Swedish texts:
-`strings: const DevToolsStrings.sv()`.
+too; the menu's own rows show both. "Offline" and "Refuse writes" last until
+the app restarts. `--dart-define=API_URL=…` sets the default for a debug
+build. Pass `entries:` to `DevMenu.show` to add your own rows after the
+package's; `showDevSheet`, `DevSheetBody` and `DevChoiceTile` build a sheet
+in the same style. Swedish texts: `strings: const DevToolsStrings.sv()`.
 
 ## Dev catalog
 
