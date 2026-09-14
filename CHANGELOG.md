@@ -1,3 +1,13 @@
+## 0.7.0
+
+- `DevFaults`, a Dio interceptor for the live API: the slowdown, and the
+  menu's new "Offline" and "Refuse writes" switches (`ApiConfig.offline`,
+  `ApiConfig.refuseWrites`, in memory only), so retry paths can be tried
+  against real servers.
+- `devResetEntry` and `DevResetStep`: a row that wipes the app's stores as
+  freshly installed, after a confirmation naming them.
+  `DevResetStep.preferences` clears every preference but the menu's own.
+
 ## 0.6.0
 
 - `DevLoginButton` and `ServerBadge` are gone: test login is a row in the

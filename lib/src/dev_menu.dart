@@ -28,7 +28,8 @@ class DevMenuEntry {
 }
 
 /// The hidden developer menu: a "Server" row that opens the [ServerPicker],
-/// a "Slow requests" row that opens the [SlowdownPicker], then whatever
+/// a "Slow requests" row that opens the [SlowdownPicker], the "Offline" and
+/// "Refuse writes" switches (see [DevFaults]), then whatever
 /// [entries] the app adds. [show] opens it; the [DevShell] calls that from
 /// every screen. Shows nothing and does nothing unless [DevTools.enabled].
 class DevMenu extends StatelessWidget {
@@ -114,6 +115,20 @@ class DevMenu extends StatelessWidget {
                 (root) =>
                     SlowdownPicker.show(root, config: config, strings: strings),
               ),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.cloud_off_outlined),
+              title: Text(strings.offline),
+              subtitle: Text(strings.offlineHelp),
+              value: config.offline,
+              onChanged: (bool v) => config.offline = v,
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.block_outlined),
+              title: Text(strings.refuseWrites),
+              subtitle: Text(strings.refuseWritesHelp),
+              value: config.refuseWrites,
+              onChanged: (bool v) => config.refuseWrites = v,
             ),
             for (final DevMenuEntry e in entries)
               if (e.when?.call() ?? true)

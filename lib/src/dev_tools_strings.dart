@@ -32,6 +32,10 @@ class DevToolsStrings {
   final String noRequestsYet;
   final String clear;
   final String offlineStatus;
+  final String resetApp;
+  final String resetAppHelp;
+  final String resetConfirm;
+  final String resetDone;
 
   const DevToolsStrings({
     this.server = 'Server',
@@ -69,6 +73,10 @@ class DevToolsStrings {
     this.noRequestsYet = 'Nothing yet. Open a screen and save something.',
     this.clear = 'Clear',
     this.offlineStatus = 'offline',
+    this.resetApp = 'Reset app data',
+    this.resetAppHelp = 'Wipe what the app stores on this device',
+    this.resetConfirm = 'As freshly installed. This wipes:',
+    this.resetDone = 'Wiped. Restart the app to start clean.',
   });
 
   const DevToolsStrings.sv()
@@ -109,5 +117,9 @@ class DevToolsStrings {
         noRequestsYet: 'Inget än. Öppna en skärm och spara något.',
         clear: 'Rensa',
         offlineStatus: 'offline',
+        resetApp: 'Nollställ appdata',
+        resetAppHelp: 'Rensar det appen sparat på den här enheten',
+        resetConfirm: 'Som nyinstallerad. Detta rensas:',
+        resetDone: 'Rensat. Starta om appen för en ren start.',
       );
 }

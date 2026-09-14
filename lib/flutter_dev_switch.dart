@@ -7,13 +7,14 @@
 /// 1. Describe the servers once: `final apiConfig = ApiConfig(environments: [...])`.
 /// 2. In `main`, before the first request: `await DevTools.load(); await apiConfig.load();`.
 /// 3. Read `apiConfig.baseUrl` per request in the HTTP client's interceptor,
-///    and await `apiConfig.slowdown` there too so the dev menu's request
-///    slowdown applies.
+///    and add a [DevFaults] interceptor before it, so the menu's slowdown,
+///    "offline" and "refuse writes" apply to the live API.
 /// 4. Install a [DevShell] in `MaterialApp.builder`: a press held for a
 ///    second anywhere, a shake, or Ctrl+Shift+D opens the [DevMenu] on every
 ///    screen. Add app-specific [DevMenuEntry]s for anything else testers
-///    need; [devLoginEntry] with the seeded accounts gets them in on
-///    non-production servers without typing.
+///    need: [devLoginEntry] with the seeded accounts gets them in on
+///    non-production servers without typing, and [devResetEntry] wipes
+///    the app's stores as freshly installed.
 ///
 /// For a dev catalog (a separate entry point that opens every screen on
 /// bundled data, no server): extend [MockServer] with the app's data, answer
@@ -29,8 +30,10 @@ export 'src/mock/mock_server.dart';
 
 export 'src/api_config.dart';
 export 'src/api_environment.dart';
+export 'src/dev_faults.dart';
 export 'src/dev_login.dart';
 export 'src/dev_menu.dart';
+export 'src/dev_reset.dart';
 export 'src/dev_shell.dart';
 export 'src/dev_tools.dart';
 export 'src/dev_tools_strings.dart';

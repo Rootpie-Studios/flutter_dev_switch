@@ -165,6 +165,23 @@ void main() {
     expect(find.text('Developer'), findsNothing);
   });
 
+  testWidgets('offline and refuse writes: switches in the menu', (
+    tester,
+  ) async {
+    await pumpLogin(tester);
+    await openMenu(tester);
+    expect(find.text('Offline'), findsOneWidget);
+    await tester.tap(find.text('Offline'));
+    await tester.pumpAndSettle();
+    expect(config.offline, isTrue);
+    await tester.tap(find.text('Refuse writes'));
+    await tester.pumpAndSettle();
+    expect(config.refuseWrites, isTrue);
+    await tester.tap(find.text('Offline'));
+    await tester.pumpAndSettle();
+    expect(config.offline, isFalse);
+  });
+
   testWidgets('store build: no gesture, no menu', (tester) async {
     DevTools.enabled = false;
     await pumpLogin(tester);

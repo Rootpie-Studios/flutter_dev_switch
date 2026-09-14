@@ -31,8 +31,9 @@ final apiConfig = ApiConfig(
 await DevTools.load();
 await apiConfig.load();
 
-// HTTP client, per request
-await Future.delayed(apiConfig.slowdown);   // zero unless picked in the menu
+// HTTP client
+dio.interceptors.add(DevFaults(apiConfig));   // slowdown, offline, refuse writes, as picked in the menu
+// and per request, in the app's own interceptor:
 options.baseUrl = apiConfig.baseUrl;
 
 // MaterialApp: the menu from every screen (press and hold anywhere for
@@ -50,6 +51,10 @@ MaterialApp(
           accounts: const [DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password')],
           login: (context, account) => context.read<UserState>().login(account.email, account.password),
         ),
+        devResetEntry(steps: [                             // "as freshly installed", after a confirmation
+          DevResetStep('Session', context.read<UserState>().forget),
+          DevResetStep.preferences(apiConfig),
+        ]),
       ],
     ),
     child: child!,

@@ -91,6 +91,34 @@ class ApiConfig extends ChangeNotifier {
       environments.where((e) => e.baseUrl == url).firstOrNull;
 
   /// Read the pick back from preferences. Safe to call more than once.
+  /// The preferences this config keeps (server pick, custom address,
+  /// slowdown), so a reset of the app's data can leave them alone.
+  Set<String> get preferenceKeys => {_pickedKey, _customKey, _slowdownKey};
+
+  // ---- Faults for the live API, applied by [DevFaults]. In memory only:
+  // a tester who left the app offline should not find it so after a
+  // restart.
+
+  bool _offline = false;
+
+  /// Every request fails as if there were no connection.
+  bool get offline => _offline;
+  set offline(bool value) {
+    if (value == _offline) return;
+    _offline = value;
+    notifyListeners();
+  }
+
+  bool _refuseWrites = false;
+
+  /// Requests other than GET are answered with a 500; reads still work.
+  bool get refuseWrites => _refuseWrites;
+  set refuseWrites(bool value) {
+    if (value == _refuseWrites) return;
+    _refuseWrites = value;
+    notifyListeners();
+  }
+
   Future<void> load([Future<SharedPreferences>? prefs]) async {
     try {
       final SharedPreferences p =
