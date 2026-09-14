@@ -18,7 +18,7 @@ void main() {
     ),
     home: Scaffold(
       body: Align(
-        alignment: Alignment.topRight,
+        alignment: Alignment.bottomRight,
         child: SizedBox(
           width: 44,
           height: 44,
@@ -39,7 +39,7 @@ void main() {
 
   Offset corner(WidgetTester tester) {
     final Size size = tester.view.physicalSize / tester.view.devicePixelRatio;
-    return Offset(size.width - 10, 10);
+    return Offset(size.width - 10, size.height - 10);
   }
 
   testWidgets('three quick taps on the corner open the menu', (tester) async {

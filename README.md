@@ -35,7 +35,7 @@ await apiConfig.load();
 await Future.delayed(apiConfig.slowdown);   // zero unless picked in the menu
 options.baseUrl = apiConfig.baseUrl;
 
-// MaterialApp: the menu from every screen (triple tap the battery icon,
+// MaterialApp: the menu from every screen (triple tap the bottom trailing corner,
 // shake, or Ctrl+Shift+D)
 MaterialApp(
   navigatorKey: navKey,

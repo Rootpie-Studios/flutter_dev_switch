@@ -20,9 +20,11 @@ import 'dev_tools.dart';
 ///
 /// Three ways in, all of them gone from a store build:
 ///
-/// - a triple tap on the status bar's trailing end (the battery icon), on
-///   every screen. No app widget lives there, and the spot is a
-///   [Listener] that only counts taps, so nothing underneath is blocked;
+/// - a triple tap on the bottom trailing corner, in the strip beside the
+///   home indicator, on every screen. Apps keep their widgets above that
+///   strip, so nothing is in the way, and the spot is a [Listener] that
+///   only counts taps, so nothing underneath is blocked either. (The
+///   status bar would be the other candidate, but iOS keeps its taps.);
 /// - a shake, on a device. The simulator's shake gesture does not reach
 ///   the accelerometer, so there the corner is the way;
 /// - Ctrl+Shift+D or Cmd+Shift+D on a hardware keyboard.
@@ -42,8 +44,8 @@ class DevShell extends StatefulWidget {
   final Duration tapWindow;
   final int taps;
 
-  /// Width of the spot; its height is the status bar inset, or this
-  /// where there is none.
+  /// Width of the spot; its height is the bottom safe-area inset, or
+  /// this where there is none.
   final double hotspotSize;
   final bool shake;
   final bool keyboard;
@@ -138,12 +140,12 @@ class _DevShellState extends State<DevShell> {
   @override
   Widget build(BuildContext context) {
     if (!DevTools.enabled) return widget.child;
-    final double inset = MediaQuery.paddingOf(context).top;
+    final double inset = MediaQuery.paddingOf(context).bottom;
     Widget shell = Stack(
       children: [
         widget.child,
         PositionedDirectional(
-          top: 0,
+          bottom: 0,
           end: 0,
           width: widget.hotspotSize,
           height: inset > 0 ? inset : widget.hotspotSize,
