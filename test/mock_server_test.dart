@@ -15,7 +15,7 @@ void main() {
   late Dio dio;
 
   setUp(() {
-    server = MockServer(latency: Duration.zero);
+    server = MockServer(delay: Duration.zero);
     dio = Dio(BaseOptions(baseUrl: 'http://mock'))
       ..httpClientAdapter = MockHttpAdapter(server, routes);
   });
@@ -55,7 +55,7 @@ void main() {
   });
 
   test('offline: every request fails to connect and is logged as 0', () async {
-    server.offline = true;
+    server.faults.offline = true;
     await expectLater(
       dio.get('/things'),
       throwsA(
@@ -70,21 +70,24 @@ void main() {
     expect(server.requests.single.failed, isTrue);
   });
 
-  test('refuse writes: writes get a 500, reads still work', () async {
-    server.failWrites = true;
-    expect((await dio.get('/things')).statusCode, 200);
-    await expectLater(
-      dio.post('/things', data: {'x': 1}),
-      throwsA(
-        isA<DioException>().having(
-          (e) => e.response?.statusCode,
-          'status',
-          500,
+  test(
+    'refuse writes: writes get the picked status, reads still work',
+    () async {
+      server.faults.refuseWith = 403;
+      expect((await dio.get('/things')).statusCode, 200);
+      await expectLater(
+        dio.post('/things', data: {'x': 1}),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.response?.statusCode,
+            'status',
+            403,
+          ),
         ),
-      ),
-    );
-    expect(server.requests.first.status, 500);
-  });
+      );
+      expect(server.requests.first.status, 403);
+    },
+  );
 
   test('the handler decides what is not mocked', () async {
     await expectLater(
@@ -97,8 +100,8 @@ void main() {
     );
   });
 
-  test('latency is waited for', () async {
-    server.latency = const Duration(milliseconds: 50);
+  test('the delay is waited for', () async {
+    await server.faults.pickDelay(const Duration(milliseconds: 50));
     final Stopwatch watch = Stopwatch()..start();
     await dio.get('/things');
     expect(watch.elapsedMilliseconds, greaterThanOrEqualTo(45));

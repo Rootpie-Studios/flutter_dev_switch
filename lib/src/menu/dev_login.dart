@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'api_config.dart';
+import '../api/api_config.dart';
 import 'dev_menu.dart';
 import 'dev_sheet.dart';
-import 'dev_tools_strings.dart';
 
 /// A seeded account testers can log in as without typing.
 class DevAccount {
@@ -33,18 +32,12 @@ DevMenuEntry devLoginEntry({
   required ApiConfig config,
   required List<DevAccount> accounts,
   required DevLoginHandler login,
-  DevToolsStrings strings = const DevToolsStrings(),
 }) => DevMenuEntry(
-  label: strings.devLogin,
+  label: 'Test login',
   icon: Icons.science_outlined,
   when: () => config.isNonProduction,
-  onTap: (BuildContext context) => runDevLogin(
-    context,
-    config: config,
-    accounts: accounts,
-    login: login,
-    strings: strings,
-  ),
+  onTap: (BuildContext context) =>
+      runDevLogin(context, config: config, accounts: accounts, login: login),
 );
 
 /// What [devLoginEntry] runs: pick an account, log in with it behind a
@@ -54,13 +47,11 @@ Future<void> runDevLogin(
   required ApiConfig config,
   required List<DevAccount> accounts,
   required DevLoginHandler login,
-  DevToolsStrings strings = const DevToolsStrings(),
 }) async {
   final DevAccount? account = await showDevAccountPicker(
     context,
     config: config,
     accounts: accounts,
-    strings: strings,
   );
   if (account == null || !context.mounted) return;
 
@@ -72,7 +63,7 @@ Future<void> runDevLogin(
     barrierDismissible: false,
     builder: (_) => PopScope(
       canPop: false,
-      child: _BusyDialog(strings.devLoggingIn.fill({'email': account.email})),
+      child: _BusyDialog('Logging in as ${account.email}…'),
     ),
   );
   try {
@@ -86,11 +77,7 @@ Future<void> runDevLogin(
   messenger.showSnackBar(
     SnackBar(
       content: Text(
-        strings.devLoginFailed.fill({
-          'email': account.email,
-          'server': config.label,
-          'reason': reason,
-        }),
+        'Test login as ${account.email} failed on ${config.label}: $reason',
       ),
     ),
   );
@@ -101,11 +88,10 @@ Future<DevAccount?> showDevAccountPicker(
   BuildContext context, {
   required ApiConfig config,
   required List<DevAccount> accounts,
-  DevToolsStrings strings = const DevToolsStrings(),
 }) => showDevSheet<DevAccount>(
   context,
   builder: (BuildContext context) => DevSheetBody(
-    title: strings.devLoginTitle.fill({'server': config.label}),
+    title: 'Test login on ${config.label}',
     children: [
       for (final DevAccount a in accounts)
         ListTile(

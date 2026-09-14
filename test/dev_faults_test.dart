@@ -39,7 +39,7 @@ void main() {
     adapter = _Adapter();
     dio = Dio(BaseOptions(baseUrl: 'https://p.example.com'))
       ..httpClientAdapter = adapter
-      ..interceptors.add(DevFaults(config));
+      ..interceptors.add(DevFaultsInterceptor(config.faults));
   });
 
   test('nothing picked: requests go through', () async {
@@ -51,7 +51,7 @@ void main() {
   test(
     'offline: every request fails to connect, nothing reaches the network',
     () async {
-      config.offline = true;
+      config.faults.offline = true;
       final DioException e = await dio
           .get('/x')
           .then<DioException>(
@@ -60,33 +60,54 @@ void main() {
           );
       expect(e.type, DioExceptionType.connectionError);
       expect(adapter.reached, 0);
-      config.offline = false;
+      config.faults.offline = false;
       await dio.get('/x');
       expect(adapter.reached, 1);
     },
   );
 
-  test('refuse writes: a 500 for a POST, reads still work', () async {
-    config.refuseWrites = true;
-    await dio.get('/x');
-    final DioException e = await dio
-        .post('/x')
-        .then<DioException>(
-          (_) => fail('sent'),
-          onError: (Object e) => e as DioException,
-        );
-    expect(e.type, DioExceptionType.badResponse);
-    expect(e.response?.statusCode, 500);
-    expect((e.response?.data as Map)['message'], contains('developer menu'));
-    expect(adapter.reached, 1);
-  });
+  test(
+    'refuse writes: the picked status for a POST, reads still work',
+    () async {
+      config.faults.refuseWith = 403;
+      await dio.get('/x');
+      await dio.head('/x');
+      final DioException e = await dio
+          .post('/x')
+          .then<DioException>(
+            (_) => fail('sent'),
+            onError: (Object e) => e as DioException,
+          );
+      expect(e.type, DioExceptionType.badResponse);
+      expect(e.response?.statusCode, 403);
+      expect((e.response?.data as Map)['message'], contains('403'));
+      expect(adapter.reached, 2, reason: 'GET and HEAD went out');
+
+      config.faults.refuseWith = 500;
+      final DioException again = await dio
+          .delete('/x')
+          .then<DioException>(
+            (_) => fail('sent'),
+            onError: (Object e) => e as DioException,
+          );
+      expect(again.response?.statusCode, 500);
+
+      config.faults.refuseWith = null;
+      await dio.post('/x');
+      expect(adapter.reached, 3);
+    },
+  );
 
   test('the switches notify', () {
     int notified = 0;
-    config.addListener(() => notified++);
-    config.offline = true;
-    config.offline = true;
-    config.refuseWrites = true;
+    config.faults.addListener(() => notified++);
+    config.faults.offline = true;
+    config.faults.offline = true;
+    config.faults.refuseWith = 500;
+    config.faults.refuseWith = 500;
     expect(notified, 2);
+    config.faults.reset();
+    expect(notified, 3);
+    expect(config.faults.refuseWrites, isFalse);
   });
 }

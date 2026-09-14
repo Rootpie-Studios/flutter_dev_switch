@@ -57,6 +57,7 @@ void main() {
   ) async {
     await pump(tester);
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Reset app data'));
     await tester.tap(find.text('Reset app data'));
     await tester.pumpAndSettle();
     expect(find.textContaining('• Session'), findsOneWidget);
@@ -72,6 +73,7 @@ void main() {
       await config.load();
       await pump(tester);
       await openMenu(tester);
+      await tester.ensureVisible(find.text('Reset app data'));
       await tester.tap(find.text('Reset app data'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Clear'));
@@ -88,6 +90,7 @@ void main() {
     cacheFails = true;
     await pump(tester);
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Reset app data'));
     await tester.tap(find.text('Reset app data'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Clear'));

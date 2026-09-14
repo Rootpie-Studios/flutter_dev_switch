@@ -70,6 +70,26 @@ class DevSheetBody extends StatelessWidget {
   );
 }
 
+/// A section title, in the menu and in a dev catalog alike: small caps in
+/// the primary colour, with room above it.
+class DevSectionHeader extends StatelessWidget {
+  final String title;
+
+  const DevSectionHeader(this.title, {super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+    child: Text(
+      title.toUpperCase(),
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        letterSpacing: 1.2,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    ),
+  );
+}
+
 /// One of several choices in a sheet, with a radio mark when [selected].
 class DevChoiceTile extends StatelessWidget {
   final bool selected;

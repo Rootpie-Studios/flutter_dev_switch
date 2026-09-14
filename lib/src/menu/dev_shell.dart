@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'dev_tools.dart';
+import '../dev_tools.dart';
 
 /// Opens the developer menu from anywhere in the app, without any page
 /// knowing about it. Install once in `MaterialApp.builder`:

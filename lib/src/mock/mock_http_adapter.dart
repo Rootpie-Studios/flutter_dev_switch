@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../faults/dev_faults.dart';
 import 'mock_server.dart';
 
 /// The app's routing table: what the server answers to one request, as a
@@ -12,10 +13,10 @@ import 'mock_server.dart';
 typedef MockHandler =
     Future<(int, Object?)> Function(RequestOptions options, Object? sent);
 
-/// Dio's transport, answered by [handler] and behaving as [server] says:
-/// every request waits [MockServer.latency], fails to connect when
-/// [MockServer.offline], gets a 500 when it is a write and
-/// [MockServer.failWrites], and is recorded either way.
+/// Dio's transport, answered by [handler] and behaving as the server's
+/// [MockServer.faults] say: every request waits the delay, fails to
+/// connect when offline, gets the picked 403 or 500 when it is a refused
+/// write, and is recorded either way.
 ///
 /// ```dart
 /// final Dio dio = Dio(BaseOptions(baseUrl: 'http://mock'))
@@ -33,13 +34,14 @@ class MockHttpAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    await Future.delayed(server.latency);
+    final DevFaults faults = server.faults;
+    if (faults.hasDelay) await Future.delayed(faults.delay);
     final Uri uri = options.uri;
     final String path = uri.query.isEmpty
         ? uri.path
         : '${uri.path}?${uri.query}';
     final Object? sent = sentBody(options.data);
-    if (server.offline) {
+    if (faults.offline) {
       server.record(
         MockRequest(
           at: DateTime.now(),
@@ -54,12 +56,18 @@ class MockHttpAdapter implements HttpClientAdapter {
         reason: 'mock server offline',
       );
     }
-    final (
-      int status,
-      Object? body,
-    ) = options.method != 'GET' && server.failWrites
-        ? (500, const {'message': 'The mock server refuses writes right now.'})
-        : await handler(options, sent);
+    final (int status, Object? body) = switch (faults.refusalFor(
+      options.method,
+    )) {
+      final int refused => (
+        refused,
+        {
+          'message':
+              'The mock server refuses writes with a $refused right now.',
+        },
+      ),
+      null => await handler(options, sent),
+    };
     server.record(
       MockRequest(
         at: DateTime.now(),

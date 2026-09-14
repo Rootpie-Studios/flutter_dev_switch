@@ -176,40 +176,43 @@ void main() {
   });
 
   test(
-    'the slowdown is kept across restarts, cleared by a store build',
+    'the faults\' delay is kept across restarts, cleared by a store build',
     () async {
       await config.load();
-      expect(config.slowdown, Duration.zero);
-      expect(config.hasSlowdown, isFalse);
+      expect(config.faults.delay, Duration.zero);
+      expect(config.faults.hasDelay, isFalse);
+      expect(config.preferenceKeys, contains('api_delay_ms'));
 
-      await config.pickSlowdown(const Duration(seconds: 3));
+      await config.faults.pickDelay(const Duration(seconds: 3));
       final ApiConfig fresh = newConfig();
       await fresh.load();
-      expect(fresh.slowdown, const Duration(seconds: 3));
-      expect(fresh.hasSlowdown, isTrue);
+      expect(fresh.faults.delay, const Duration(seconds: 3));
+      expect(fresh.faults.hasDelay, isTrue);
 
-      await fresh.pickSlowdown(Duration.zero);
+      await fresh.faults.pickDelay(Duration.zero);
       final ApiConfig off = newConfig();
       await off.load();
-      expect(off.hasSlowdown, isFalse, reason: 'removed from prefs');
+      expect(off.faults.hasDelay, isFalse, reason: 'removed from prefs');
 
-      await off.pickSlowdown(const Duration(seconds: 1));
+      await off.faults.pickDelay(const Duration(seconds: 1));
       DevTools.enabled = false;
       final ApiConfig store = newConfig();
       await store.load();
-      expect(store.slowdown, Duration.zero);
+      expect(store.faults.delay, Duration.zero);
       DevTools.enabled = true;
       final ApiConfig after = newConfig();
       await after.load();
-      expect(after.slowdown, Duration.zero, reason: 'the store build wiped it');
+      expect(
+        after.faults.delay,
+        Duration.zero,
+        reason: 'the store build wiped it',
+      );
     },
   );
 
-  test('a slowdown reads as Off or seconds', () {
-    const DevToolsStrings en = DevToolsStrings();
-    expect(formatSlowdown(Duration.zero, en), 'Off');
-    expect(formatSlowdown(const Duration(seconds: 3), en), '3 s');
-    expect(formatSlowdown(const Duration(milliseconds: 500), en), '0.5 s');
-    expect(formatSlowdown(Duration.zero, const DevToolsStrings.sv()), 'Av');
+  test('a delay reads as Off or seconds', () {
+    expect(formatDelay(Duration.zero), 'Off');
+    expect(formatDelay(const Duration(seconds: 3)), '3 s');
+    expect(formatDelay(const Duration(milliseconds: 500)), '0.5 s');
   });
 }

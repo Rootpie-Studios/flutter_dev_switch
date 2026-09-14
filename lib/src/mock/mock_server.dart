@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../faults/dev_faults.dart';
+
 /// A call the app made to a [MockServer] and how it was answered.
 /// [status] is 0 when the server was offline.
 class MockRequest {
@@ -21,43 +23,19 @@ class MockRequest {
   bool get failed => status == 0 || status >= 400;
 }
 
-/// How a fake server behaves, and what it has been asked. The knobs a
-/// dev catalog needs to look at loading, offline and failure states:
-/// [latency], [offline], [failWrites]. Every request goes into [requests]
-/// so a screen's traffic can be read afterwards ([MockRequestLog]).
+/// A fake server for a dev catalog: how it behaves ([faults], the same
+/// delay, offline and refuse-writes knobs the developer menu has for the
+/// live API) and what it has been asked ([requests], so a screen's traffic
+/// can be read afterwards in a MockRequestLog).
 ///
 /// Extend it with the app's own data and quirks, and answer requests
-/// through a [MockHttpAdapter]. Control it with a [MockServerPanel].
+/// through a MockHttpAdapter. Control it with a DevFaultsPanel on [faults].
 class MockServer extends ChangeNotifier {
-  MockServer({Duration latency = const Duration(milliseconds: 300)})
-    : _latency = latency;
+  /// What happens to requests. Starts with a realistic round trip.
+  final DevFaults faults;
 
-  Duration _latency;
-
-  /// How long every answer takes.
-  Duration get latency => _latency;
-  set latency(Duration value) {
-    _latency = value;
-    notifyListeners();
-  }
-
-  bool _offline = false;
-
-  /// Every request fails as if there were no connection.
-  bool get offline => _offline;
-  set offline(bool value) {
-    _offline = value;
-    notifyListeners();
-  }
-
-  bool _failWrites = false;
-
-  /// Anything but a GET is answered with a 500; reads still work.
-  bool get failWrites => _failWrites;
-  set failWrites(bool value) {
-    _failWrites = value;
-    notifyListeners();
-  }
+  MockServer({Duration delay = const Duration(milliseconds: 300)})
+    : faults = DevFaults(delay: delay);
 
   final List<MockRequest> _requests = [];
 
@@ -73,5 +51,11 @@ class MockServer extends ChangeNotifier {
   void clearRequests() {
     _requests.clear();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    faults.dispose();
+    super.dispose();
   }
 }

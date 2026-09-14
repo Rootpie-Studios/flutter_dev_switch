@@ -1,3 +1,29 @@
+## 0.9.0
+
+- One `DevFaults` for the three request faults, wherever they apply:
+  `ApiConfig.faults` for the live API (applied by `DevFaultsInterceptor`,
+  which replaces the `DevFaults` interceptor) and `MockServer.faults` for a
+  dev catalog. `delay`/`pickDelay`, `offline` and `refuseWrites` replace
+  `ApiConfig.slowdown`/`pickSlowdown`/`offline`/`refuseWrites` and
+  `MockServer.latency`/`offline`/`failWrites`. The delay's preference is
+  `<prefix>_delay_ms`; an old `api_slowdown_ms` is simply ignored.
+- Refused writes get a status of the tester's choice, a 403 or a 500
+  (`DevFaults.refuseWith`, null for off; `refusalFor(method)` says what a
+  request gets), so an app's "not allowed" handling can be tried as well
+  as its "server broke" one. `refuseWrites` is now read-only. HEAD and
+  OPTIONS count as reads. `reset()` notifies.
+- `DevFaultsPanel` shows the three knobs for either, with the delay and
+  the refusal as rows of choices (Off, 0.3 s, 1 s, 3 s; Off, 403, 500). It
+  replaces both the menu's "Slow requests" row with its `SlowdownPicker`
+  sheet and `MockServerPanel`. `formatDelay` replaces `formatSlowdown`.
+- The menu is in sections: "Server" (the pick as the row's title, opening
+  the picker), "Faults" (the panel), "App" (the entries). `DevSectionHeader`
+  moved next to the other sheet pieces and is used by the menu too.
+- English only: `DevToolsStrings` and every `strings:` parameter are gone;
+  the texts are literals in the widgets.
+- Sources laid out by concern: `src/api/`, `src/faults/`, `src/menu/`,
+  `src/mock/`. Nothing changes for importers of the package library.
+
 ## 0.8.0
 
 - The shake is gone: the shell opens the menu on a held press or

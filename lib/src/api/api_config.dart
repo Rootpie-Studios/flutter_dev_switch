@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../dev_tools.dart';
+import '../faults/dev_faults.dart';
 import 'api_environment.dart';
-import 'dev_tools.dart';
 
 /// Where API requests go, decided once at start and changeable at runtime,
-/// plus what the developer menu does to them on the way out.
+/// and what the developer menu does to them on the way out ([faults]).
 ///
 /// Where requests go, first hit wins:
 ///  1. A server picked in the app (the hidden picker), either one of
@@ -20,12 +21,6 @@ import 'dev_tools.dart';
 /// Read [baseUrl] per request (in the HTTP client's interceptor) so a change
 /// applies to every request at once without recreating anything. [load]
 /// must have completed before the first request; await it in `main`.
-///
-/// What happens to requests, all applied by a [DevFaults] interceptor:
-/// [slowdown] holds every request back (kept in preferences, so a tester
-/// who set it finds it again after a restart, shown in the menu so it is
-/// not forgotten); [offline] and [refuseWrites] fail them (in memory only:
-/// a tester who left the app offline should not find it so on restart).
 class ApiConfig extends ChangeNotifier {
   /// The servers testers can pick from, in the order they are listed.
   final List<ApiEnvironment> environments;
@@ -43,9 +38,13 @@ class ApiConfig extends ChangeNotifier {
   /// (the developer's own machine on the LAN) is one tap away.
   final String customExample;
 
+  /// What happens to requests: the delay, "offline" and "refuse writes",
+  /// applied by a `DevFaultsInterceptor` in the HTTP client. Loaded and
+  /// saved along with the server pick.
+  final DevFaults faults;
+
   final String _pickedKey;
   final String _customKey;
-  final String _slowdownKey;
 
   ApiConfig({
     required this.environments,
@@ -55,11 +54,9 @@ class ApiConfig extends ChangeNotifier {
     String prefsPrefix = 'api',
   }) : assert(environments.isNotEmpty, 'give at least one environment'),
        production = production ?? environments.first,
+       faults = DevFaults(prefsKey: '${prefsPrefix}_delay_ms'),
        _pickedKey = '${prefsPrefix}_environment',
-       _customKey = '${prefsPrefix}_custom_url',
-       _slowdownKey = '${prefsPrefix}_slowdown_ms';
-
-  // ---- Where requests go.
+       _customKey = '${prefsPrefix}_custom_url';
 
   ApiEnvironment? _picked;
   String? _custom;
@@ -138,68 +135,35 @@ class ApiConfig extends ChangeNotifier {
     return uri.replace(path: path, query: null, fragment: null).toString();
   }
 
-  // ---- What happens to requests (see DevFaults).
-
-  Duration _slowdown = Duration.zero;
-  bool _offline = false;
-  bool _refuseWrites = false;
-
-  /// How long every request waits before it is sent. Zero unless picked in
-  /// the dev menu; always zero in a store install.
-  Duration get slowdown => _slowdown;
-
-  /// Requests are being held back.
-  bool get hasSlowdown => _slowdown > Duration.zero;
-
-  /// Hold every request back by [delay] before sending it; zero to stop.
-  Future<void> pickSlowdown(
-    Duration delay, [
-    Future<SharedPreferences>? prefs,
-  ]) async {
-    _slowdown = delay.isNegative ? Duration.zero : delay;
-    notifyListeners();
-    await _save(prefs);
-  }
-
-  /// Every request fails as if there were no connection.
-  bool get offline => _offline;
-  set offline(bool value) {
-    if (value == _offline) return;
-    _offline = value;
-    notifyListeners();
-  }
-
-  /// Requests other than GET are answered with a 500; reads still work.
-  bool get refuseWrites => _refuseWrites;
-  set refuseWrites(bool value) {
-    if (value == _refuseWrites) return;
-    _refuseWrites = value;
-    notifyListeners();
-  }
-
   // ---- Preferences.
 
-  /// The preferences this config keeps (server pick, custom address,
-  /// slowdown), so a reset of the app's data can leave them alone.
-  Set<String> get preferenceKeys => {_pickedKey, _customKey, _slowdownKey};
+  /// The preferences this config keeps (server pick, custom address, the
+  /// faults' delay), so a reset of the app's data can leave them alone.
+  Set<String> get preferenceKeys => {
+    _pickedKey,
+    _customKey,
+    if (faults.prefsKey case final String key) key,
+  };
 
-  /// Read the picks back from preferences. Safe to call more than once.
+  /// Read the picks back from preferences, the faults' too. Safe to call
+  /// more than once.
   Future<void> load([Future<SharedPreferences>? prefs]) async {
     try {
       final SharedPreferences p =
           await (prefs ?? SharedPreferences.getInstance());
-      // A store install has no picker, and must not inherit a pick left
-      // behind by a TestFlight install of the same app: production only.
-      if (!DevTools.enabled) {
+      if (DevTools.enabled) {
+        final String? key = p.getString(_pickedKey);
+        _picked = environments.where((e) => e.key == key).firstOrNull;
+        _custom = _picked == null
+            ? normalizeUrl(p.getString(_customKey))
+            : null;
+      } else {
+        // A store install has no picker, and must not inherit a pick left
+        // behind by a TestFlight install of the same app: production only.
         _forget();
-        await Future.wait(preferenceKeys.map(p.remove));
-        notifyListeners();
-        return;
+        await Future.wait([p.remove(_pickedKey), p.remove(_customKey)]);
       }
-      final String? key = p.getString(_pickedKey);
-      _picked = environments.where((e) => e.key == key).firstOrNull;
-      _custom = _picked == null ? normalizeUrl(p.getString(_customKey)) : null;
-      _slowdown = Duration(milliseconds: p.getInt(_slowdownKey) ?? 0);
+      await faults.load(Future.value(p));
     } catch (e) {
       debugPrint('ApiConfig: preferences unreadable, using defaults ($e)');
       _forget();
@@ -220,10 +184,6 @@ class ApiConfig extends ChangeNotifier {
           p.setString(_customKey, url)
         else
           p.remove(_customKey),
-        if (hasSlowdown)
-          p.setInt(_slowdownKey, _slowdown.inMilliseconds)
-        else
-          p.remove(_slowdownKey),
       ]);
     } catch (e) {
       // The pick still applies; it just does not survive a restart.
@@ -234,10 +194,18 @@ class ApiConfig extends ChangeNotifier {
   void _forget() {
     _picked = null;
     _custom = null;
-    _slowdown = Duration.zero;
   }
 
   /// Forget everything in memory (not in preferences), for tests.
   @visibleForTesting
-  void reset() => _forget();
+  void reset() {
+    _forget();
+    faults.reset();
+  }
+
+  @override
+  void dispose() {
+    faults.dispose();
+    super.dispose();
+  }
 }

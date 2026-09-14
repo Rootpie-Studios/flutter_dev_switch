@@ -26,14 +26,8 @@ void main() {
   Future<void> pumpLogin(
     WidgetTester tester, {
     List<DevMenuEntry> entries = const [],
-    DevToolsStrings strings = const DevToolsStrings(),
   }) => tester.pumpWidget(
-    shellApp(
-      config: config,
-      entries: entries,
-      strings: strings,
-      body: const Text('LOGO'),
-    ),
+    shellApp(config: config, entries: entries, body: const Text('LOGO')),
   );
 
   Future<void> openMenu(WidgetTester tester) async {
@@ -47,23 +41,30 @@ void main() {
     onTap: _nothing,
   );
 
+  /// The Server section's one row is titled by the pick.
   Future<void> openServerPicker(WidgetTester tester) async {
     await openMenu(tester);
-    await tester.tap(find.text('Server'));
+    await tester.tap(find.text(config.label));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('no entries: long press opens the menu with its own rows', (
+  testWidgets('no entries: the menu has its Server and Faults sections', (
     tester,
   ) async {
     await pumpLogin(tester);
     await openMenu(tester);
     expect(find.text('Developer'), findsOneWidget);
-    expect(find.text('Server'), findsOneWidget);
-    expect(find.text('Slow requests'), findsOneWidget);
-    expect(find.text('Off'), findsOneWidget, reason: 'slowdown subtitle');
+    expect(find.text('SERVER'), findsOneWidget);
+    expect(find.text('Production'), findsOneWidget, reason: 'the pick');
+    expect(find.text(production.baseUrl), findsOneWidget);
+    expect(find.text('FAULTS'), findsOneWidget);
+    expect(find.text('Delay'), findsOneWidget);
+    expect(find.text('Off'), findsNWidgets(2), reason: 'no delay, no refusal');
+    expect(find.text('Offline'), findsOneWidget);
+    expect(find.text('Refuse writes'), findsOneWidget);
+    expect(find.text('APP'), findsNothing, reason: 'nothing to list');
 
-    await tester.tap(find.text('Server'));
+    await tester.tap(find.text('Production'));
     await tester.pumpAndSettle();
     expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
     expect(find.text('Dev'), findsOneWidget);
@@ -72,52 +73,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(config.picked, dev);
     await openMenu(tester);
+    expect(find.text('Dev'), findsOneWidget, reason: 'the row follows');
     expect(find.text(dev.baseUrl), findsOneWidget, reason: 'server subtitle');
   });
 
-  testWidgets('slow requests: picked in the menu, shown in its row', (
-    tester,
-  ) async {
+  testWidgets('delay: picked in the Faults section, kept', (tester) async {
     await pumpLogin(tester);
     await openMenu(tester);
-    await tester.tap(find.text('Slow requests'));
-    await tester.pumpAndSettle();
-    expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
-    expect(find.text('Off'), findsOneWidget);
+    final Finder off = find.descendant(
+      of: find.widgetWithText(ListTile, 'Delay'),
+      matching: find.text('Off'),
+    );
     await tester.tap(find.text('3 s'));
     await tester.pumpAndSettle();
-    expect(config.slowdown, const Duration(seconds: 3));
+    expect(config.faults.delay, const Duration(seconds: 3));
+    await tester.tap(off);
+    await tester.pumpAndSettle();
+    expect(config.faults.delay, Duration.zero);
 
-    await openMenu(tester);
-    expect(find.text('3 s'), findsOneWidget, reason: 'slowdown subtitle');
-    await tester.tap(find.text('Slow requests'));
+    // A delay that is not one of the choices still shows, and can be
+    // switched off.
+    await config.faults.pickDelay(const Duration(seconds: 2));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Off'));
+    expect(find.text('2 s'), findsOneWidget);
+    await tester.tap(off);
     await tester.pumpAndSettle();
-    expect(config.slowdown, Duration.zero);
+    expect(config.faults.hasDelay, isFalse);
   });
 
-  testWidgets(
-    'with entries: long press opens the menu; Server opens the picker',
-    (tester) async {
-      await pumpLogin(tester, entries: const [noop]);
-      expect(find.text('Server'), findsNothing);
-      await openMenu(tester);
-      expect(find.text('Developer'), findsOneWidget);
-      expect(find.text('Server'), findsOneWidget);
+  testWidgets('with entries: an App section after the package\'s', (
+    tester,
+  ) async {
+    await pumpLogin(tester, entries: const [noop]);
+    expect(find.text('Production'), findsNothing);
+    await openMenu(tester);
+    expect(find.text('APP'), findsOneWidget);
+    expect(find.text('Noop'), findsOneWidget);
+    final Offset faults = tester.getTopLeft(find.text('FAULTS'));
+    final Offset app = tester.getTopLeft(find.text('APP'));
+    expect(faults.dy, lessThan(app.dy), reason: 'the app\'s rows come last');
 
-      await tester.tap(find.text('Server'));
-      await tester.pumpAndSettle();
-      expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
-      expect(find.text('Dev'), findsOneWidget);
-
-      await tester.tap(find.text('Dev'));
-      await tester.pumpAndSettle();
-      expect(config.picked, dev);
-      await openMenu(tester);
-      expect(find.text(dev.baseUrl), findsOneWidget, reason: 'server subtitle');
-    },
-  );
+    await tester.tap(find.text('Production'));
+    await tester.pumpAndSettle();
+    expect(find.text('Developer'), findsNothing, reason: 'menu replaced');
+    await tester.tap(find.text('Dev'));
+    await tester.pumpAndSettle();
+    expect(config.picked, dev);
+  });
 
   testWidgets('custom address: prefilled example, normalised, refused', (
     tester,
@@ -132,6 +134,7 @@ void main() {
       'http://my-macbook.local/api',
     );
     await tester.enterText(find.byType(TextField), '192.168.55.6');
+    await tester.ensureVisible(find.text('Use'));
     await tester.tap(find.text('Use'));
     await tester.pumpAndSettle();
     expect(config.baseUrl, 'http://192.168.55.6/api');
@@ -140,6 +143,7 @@ void main() {
     await tester.tap(find.text('Custom address'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'http://');
+    await tester.ensureVisible(find.text('Use'));
     await tester.tap(find.text('Use'));
     await tester.pumpAndSettle();
     expect(config.baseUrl, 'http://192.168.55.6/api', reason: 'unchanged');
@@ -159,27 +163,50 @@ void main() {
       ],
     );
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Test login'));
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     expect(seen, isNotNull);
     expect(find.text('Developer'), findsNothing);
   });
 
-  testWidgets('offline and refuse writes: switches in the menu', (
-    tester,
-  ) async {
+  testWidgets('offline and refuse writes: picked in the menu', (tester) async {
     await pumpLogin(tester);
     await openMenu(tester);
     expect(find.text('Offline'), findsOneWidget);
     await tester.tap(find.text('Offline'));
     await tester.pumpAndSettle();
-    expect(config.offline, isTrue);
-    await tester.tap(find.text('Refuse writes'));
+    expect(config.faults.offline, isTrue);
+    await tester.tap(find.text('403'));
     await tester.pumpAndSettle();
-    expect(config.refuseWrites, isTrue);
+    expect(config.faults.refuseWith, 403);
+    await tester.tap(find.text('500'));
+    await tester.pumpAndSettle();
+    expect(config.faults.refuseWith, 500);
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(ListTile, 'Refuse writes'),
+        matching: find.text('Off'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(config.faults.refuseWrites, isFalse);
     await tester.tap(find.text('Offline'));
     await tester.pumpAndSettle();
-    expect(config.offline, isFalse);
+    expect(config.faults.offline, isFalse);
+  });
+
+  testWidgets('the menu fits a phone: the delay row does not overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375 * 3, 812 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await pumpLogin(tester, entries: const [noop]);
+    await openMenu(tester);
+    expect(find.text('Delay'), findsOneWidget);
+    expect(find.text('0.3 s'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('store build: no gesture, no menu', (tester) async {
@@ -188,17 +215,7 @@ void main() {
     await holdOn(tester, find.text('LOGO'));
     await tester.pumpAndSettle();
     expect(find.text('Developer'), findsNothing);
-    expect(find.textContaining('Server'), findsNothing);
-  });
-
-  testWidgets('Swedish strings', (tester) async {
-    await pumpLogin(
-      tester,
-      entries: const [noop],
-      strings: const DevToolsStrings.sv(),
-    );
-    await openMenu(tester);
-    expect(find.text('Utvecklare'), findsOneWidget);
+    expect(find.text('SERVER'), findsNothing);
   });
 }
 
@@ -208,7 +225,6 @@ Future<void> _nothing(BuildContext _) async {}
 Widget shellApp({
   required ApiConfig config,
   List<DevMenuEntry> entries = const [],
-  DevToolsStrings strings = const DevToolsStrings(),
   required Widget body,
 }) {
   final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -216,12 +232,8 @@ Widget shellApp({
     navigatorKey: navKey,
     builder: (context, child) => DevShell(
       navigatorKey: navKey,
-      open: (context) => DevMenu.show(
-        context,
-        config: config,
-        entries: entries,
-        strings: strings,
-      ),
+      open: (context) =>
+          DevMenu.show(context, config: config, entries: entries),
       child: child!,
     ),
     home: Scaffold(body: body),

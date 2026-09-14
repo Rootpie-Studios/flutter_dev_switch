@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'api_config.dart';
+import '../api/api_config.dart';
 import 'dev_menu.dart';
-import 'dev_tools_strings.dart';
 
 /// One thing a reset wipes, named for the confirmation.
 class DevResetStep {
@@ -27,15 +26,11 @@ class DevResetStep {
 /// A [DevMenuEntry] that wipes what the app stores on the device, as
 /// freshly installed: the app lists its stores as [steps], the row asks
 /// once, naming them, then runs them in order and says so.
-DevMenuEntry devResetEntry({
-  required List<DevResetStep> steps,
-  DevToolsStrings strings = const DevToolsStrings(),
-}) => DevMenuEntry(
-  label: strings.resetApp,
-  subtitle: strings.resetAppHelp,
+DevMenuEntry devResetEntry({required List<DevResetStep> steps}) => DevMenuEntry(
+  label: 'Reset app data',
+  subtitle: 'Wipe what the app stores on this device',
   icon: Icons.restart_alt_rounded,
-  onTap: (BuildContext context) =>
-      runDevReset(context, steps: steps, strings: strings),
+  onTap: (BuildContext context) => runDevReset(context, steps: steps),
 );
 
 /// What [devResetEntry] runs. Every step is attempted even when one
@@ -43,25 +38,24 @@ DevMenuEntry devResetEntry({
 Future<void> runDevReset(
   BuildContext context, {
   required List<DevResetStep> steps,
-  DevToolsStrings strings = const DevToolsStrings(),
 }) async {
   final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
   final bool? confirmed = await showDialog<bool>(
     context: context,
     builder: (BuildContext context) => AlertDialog(
-      title: Text(strings.resetApp),
+      title: const Text('Reset app data'),
       content: Text(
-        '${strings.resetConfirm}\n\n'
+        'As freshly installed. This wipes:\n\n'
         '${steps.map((DevResetStep s) => '• ${s.label}').join('\n')}',
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text(strings.cancel),
+          child: const Text('Cancel'),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: Text(strings.clear),
+          child: const Text('Clear'),
         ),
       ],
     ),
@@ -74,14 +68,16 @@ Future<void> runDevReset(
       await step.run();
     } catch (e) {
       debugPrint('Dev reset: ${step.label} failed: $e');
-      failed.add(
-        strings.resetStepFailed.fill({'step': step.label, 'reason': '$e'}),
-      );
+      failed.add('Could not wipe ${step.label}: $e');
     }
   }
   messenger.showSnackBar(
     SnackBar(
-      content: Text(failed.isEmpty ? strings.resetDone : failed.join('\n')),
+      content: Text(
+        failed.isEmpty
+            ? 'Wiped. Restart the app to start clean.'
+            : failed.join('\n'),
+      ),
     ),
   );
 }

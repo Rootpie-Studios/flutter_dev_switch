@@ -1,6 +1,6 @@
 /// Runtime API server switching, a hidden developer menu, and the pieces
-/// of a dev catalog (a mock server with knobs, a request log, scenario
-/// rows) for the Rootpi Flutter apps.
+/// of a dev catalog (a mock server with the same knobs, a request log,
+/// scenario rows) for the Rootpi Flutter apps.
 ///
 /// The package never reaches into the app. It owns a state object
 /// ([ApiConfig]) and some widgets; the app composes them:
@@ -8,8 +8,9 @@
 /// 1. Describe the servers once: `final apiConfig = ApiConfig(environments: [...])`.
 /// 2. In `main`, before the first request: `await DevTools.load(); await apiConfig.load();`.
 /// 3. In the HTTP client, read `apiConfig.baseUrl` per request, and add a
-///    [DevFaults] interceptor in front of the app's own, so the menu's
-///    slowdown, "offline" and "refuse writes" apply to the live API.
+///    `DevFaultsInterceptor(apiConfig.faults)` in front of the app's own,
+///    so the menu's delay, "offline" and "refuse writes" apply to the
+///    live API.
 /// 4. Install a [DevShell] in `MaterialApp.builder`: a press held for a
 ///    second anywhere, or Ctrl+Shift+D, opens the [DevMenu] on every
 ///    screen. Add app-specific [DevMenuEntry]s for anything else testers
@@ -21,24 +22,27 @@
 /// For a dev catalog (a separate entry point that opens every screen on
 /// bundled data, no server): extend [MockServer] with the app's data, answer
 /// requests through a [MockHttpAdapter], and build the catalog from
-/// [DevSectionHeader], [DevScenarioTile], [MockServerPanel] and
-/// [MockRequestLog].
+/// [DevSectionHeader], [DevScenarioTile], a [DevFaultsPanel] on the
+/// server's faults, and [MockRequestLog].
+///
+/// The sources are laid out by concern: `api/` (where requests go),
+/// `faults/` (what happens to them), `menu/` (the shell, the menu and its
+/// rows) and `mock/` (the catalog's fake server).
 library;
 
-export 'src/catalog/dev_catalog_widgets.dart';
-export 'src/catalog/mock_server_panel.dart';
-export 'src/mock/mock_http_adapter.dart';
-export 'src/mock/mock_server.dart';
-
-export 'src/api_config.dart';
-export 'src/api_environment.dart';
-export 'src/dev_faults.dart';
-export 'src/dev_login.dart';
-export 'src/dev_menu.dart';
-export 'src/dev_reset.dart';
-export 'src/dev_sheet.dart';
-export 'src/dev_shell.dart';
+export 'src/api/api_config.dart';
+export 'src/api/api_environment.dart';
+export 'src/api/server_picker.dart';
 export 'src/dev_tools.dart';
-export 'src/dev_tools_strings.dart';
-export 'src/server_picker.dart';
-export 'src/slowdown_picker.dart';
+export 'src/faults/dev_faults.dart';
+export 'src/faults/dev_faults_interceptor.dart';
+export 'src/faults/dev_faults_panel.dart';
+export 'src/menu/dev_login.dart';
+export 'src/menu/dev_menu.dart';
+export 'src/menu/dev_reset.dart';
+export 'src/menu/dev_sheet.dart';
+export 'src/menu/dev_shell.dart';
+export 'src/mock/dev_scenario_tile.dart';
+export 'src/mock/mock_http_adapter.dart';
+export 'src/mock/mock_request_log.dart';
+export 'src/mock/mock_server.dart';

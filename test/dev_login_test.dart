@@ -72,6 +72,7 @@ void main() {
     await config.pick(dev);
     await pump(tester);
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Test login'));
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     expect(find.text('Test login on Dev'), findsOneWidget);
@@ -86,6 +87,7 @@ void main() {
     await config.pick(dev);
     await pump(tester);
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Test login'));
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Admin'));
@@ -105,6 +107,7 @@ void main() {
     await config.pick(dev);
     await pump(tester);
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Test login'));
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Admin'));
@@ -119,6 +122,7 @@ void main() {
     await config.pick(dev);
     await pump(tester);
     await openMenu(tester);
+    await tester.ensureVisible(find.text('Test login'));
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Admin'));

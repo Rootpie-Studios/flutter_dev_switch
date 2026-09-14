@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late MockServer server;
 
-  setUp(() => server = MockServer(latency: Duration.zero));
+  setUp(() => server = MockServer(delay: Duration.zero));
 
   Future<void> pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     MaterialApp(
@@ -13,26 +13,27 @@ void main() {
     ),
   );
 
-  testWidgets('the panel drives the server', (tester) async {
-    await pump(tester, MockServerPanel(server: server));
-    expect(find.text('Instant'), findsOneWidget);
+  testWidgets('the panel drives the server\'s faults', (tester) async {
+    await pump(tester, DevFaultsPanel(faults: server.faults));
+    expect(find.text('Off'), findsNWidgets(2), reason: 'delay, refusal');
     expect(find.text('0.3 s'), findsOneWidget);
+    expect(find.text('1 s'), findsOneWidget);
     expect(find.text('3 s'), findsOneWidget);
 
     await tester.tap(find.text('3 s'));
     await tester.pump();
-    expect(server.latency, const Duration(seconds: 3));
+    expect(server.faults.delay, const Duration(seconds: 3));
 
     await tester.tap(find.text('Offline'));
     await tester.pump();
-    expect(server.offline, isTrue);
+    expect(server.faults.offline, isTrue);
 
-    await tester.tap(find.text('Refuse writes'));
+    await tester.tap(find.text('500'));
     await tester.pump();
-    expect(server.failWrites, isTrue);
+    expect(server.faults.refuseWith, 500);
 
     // A change made elsewhere shows up too.
-    server.offline = false;
+    server.faults.offline = false;
     await tester.pump();
     final SwitchListTile offline = tester.widget(
       find.widgetWithText(SwitchListTile, 'Offline'),

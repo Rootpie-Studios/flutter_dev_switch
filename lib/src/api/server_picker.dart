@@ -1,40 +1,28 @@
 import 'package:flutter/material.dart';
 
+import '../menu/dev_sheet.dart';
 import 'api_config.dart';
 import 'api_environment.dart';
-import 'dev_sheet.dart';
-import 'dev_tools_strings.dart';
 
 /// The server switch for testers. Lists the known servers plus a URL of
 /// one's own (a developer machine on the LAN, best by its `.local` name),
 /// marks the one in use, and remembers the choice across restarts.
 ///
-/// Opened from the [DevMenu], whose Server row shows the pick; [show] for
+/// Opened from the DevMenu, whose Server row shows the pick; [show] for
 /// anywhere else.
 class ServerPicker extends StatelessWidget {
   final ApiConfig config;
-  final DevToolsStrings strings;
 
-  const ServerPicker({
-    super.key,
-    required this.config,
-    this.strings = const DevToolsStrings(),
-  });
+  const ServerPicker({super.key, required this.config});
 
-  static Future<void> show(
-    BuildContext context, {
-    required ApiConfig config,
-    DevToolsStrings strings = const DevToolsStrings(),
-  }) => showDevSheet<void>(
-    context,
-    builder: (_) => ServerPicker(config: config, strings: strings),
-  );
+  static Future<void> show(BuildContext context, {required ApiConfig config}) =>
+      showDevSheet<void>(context, builder: (_) => ServerPicker(config: config));
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: config,
     builder: (context, _) => DevSheetBody(
-      title: strings.server,
+      title: 'Server',
       children: [
         for (final ApiEnvironment e in config.environments)
           DevChoiceTile(
@@ -46,7 +34,7 @@ class ServerPicker extends StatelessWidget {
               if (context.mounted) Navigator.of(context).pop();
             },
           ),
-        _CustomRow(config, strings),
+        _CustomRow(config),
         if (config.hasPick)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -55,14 +43,15 @@ class ServerPicker extends StatelessWidget {
                 await config.pick(null);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              child: Text(strings.resetToDefault),
+              child: const Text('Reset to default'),
             ),
           ),
         if (config.defineUrl.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Text(
-              strings.buildPointsAt.fill({'url': config.defineUrl}),
+              'This build points at ${config.defineUrl} when nothing is '
+              'picked.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -75,15 +64,13 @@ class ServerPicker extends StatelessWidget {
 /// hint. Tapping opens a dialog to type or change it.
 class _CustomRow extends StatelessWidget {
   final ApiConfig config;
-  final DevToolsStrings strings;
-  const _CustomRow(this.config, this.strings);
+  const _CustomRow(this.config);
 
   Future<void> _edit(BuildContext context) async {
     final String? url = await showDialog<String>(
       context: context,
       builder: (_) => _CustomUrlDialog(
         initial: config.custom ?? config.customExample,
-        strings: strings,
         example: config.customExample,
       ),
     );
@@ -91,18 +78,17 @@ class _CustomRow extends StatelessWidget {
     if (await config.pickCustom(url)) {
       if (context.mounted) Navigator.of(context).pop();
     } else if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.invalidAddress)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That is not a valid address')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) => DevChoiceTile(
     selected: config.custom != null,
-    title: strings.customAddress,
-    subtitle:
-        config.custom ?? '${strings.customAddressHint}${config.customExample}',
+    title: 'Custom address',
+    subtitle: config.custom ?? 'Tap to enter, e.g. ${config.customExample}',
     trailing: Icon(
       Icons.edit_outlined,
       color: Theme.of(context).colorScheme.outline,
@@ -113,13 +99,8 @@ class _CustomRow extends StatelessWidget {
 
 class _CustomUrlDialog extends StatefulWidget {
   final String? initial;
-  final DevToolsStrings strings;
   final String example;
-  const _CustomUrlDialog({
-    this.initial,
-    required this.strings,
-    required this.example,
-  });
+  const _CustomUrlDialog({this.initial, required this.example});
 
   @override
   State<_CustomUrlDialog> createState() => _CustomUrlDialogState();
@@ -140,7 +121,7 @@ class _CustomUrlDialogState extends State<_CustomUrlDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.strings.customAddressTitle),
+    title: const Text('Custom server address'),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +137,8 @@ class _CustomUrlDialogState extends State<_CustomUrlDialog> {
         ),
         const SizedBox(height: 10),
         Text(
-          widget.strings.customAddressHelp,
+          'A computer\'s .local name keeps working when its IP changes; an '
+          'IP works too. http:// and /api are filled in when missing.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -164,9 +146,9 @@ class _CustomUrlDialogState extends State<_CustomUrlDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: Text(widget.strings.cancel),
+        child: const Text('Cancel'),
       ),
-      TextButton(onPressed: _submit, child: Text(widget.strings.use)),
+      TextButton(onPressed: _submit, child: const Text('Use')),
     ],
   );
 }

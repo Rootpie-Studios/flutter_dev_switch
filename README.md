@@ -1,7 +1,7 @@
 # flutter_dev_switch
 
 Hidden developer tools for Flutter apps talking to an API: switch server at
-runtime, slow every request down or fail it to look at loading and error
+runtime, delay every request or fail it to look at loading and error
 states, log in as a seeded test account, wipe the app's data. Only active in
 debug builds, builds with `--dart-define=DEV_TOOLS=true`, and TestFlight
 installs; store installs get nothing.
@@ -38,7 +38,7 @@ await DevTools.load();
 await apiConfig.load();
 
 // HTTP client
-dio.interceptors.add(DevFaults(apiConfig));   // slowdown, offline, refuse writes, as picked in the menu
+dio.interceptors.add(DevFaultsInterceptor(apiConfig.faults));   // delay, offline, refused writes, as picked in the menu
 // and per request, in the app's own interceptor:
 options.baseUrl = apiConfig.baseUrl;
 
@@ -72,13 +72,23 @@ MaterialApp(
 repositories to do these things; keeping them in one place keeps the menu
 file to a list of rows.
 
-The picker also accepts a typed URL (a `.local` name or an IP; `http://` and
-`/api` are filled in). Picks persist across restarts, the request slowdown
-too; the menu's own rows show both. "Offline" and "Refuse writes" last until
-the app restarts. `--dart-define=API_URL=…` sets the default for a debug
-build. Pass `entries:` to `DevMenu.show` to add your own rows after the
-package's; `showDevSheet`, `DevSheetBody` and `DevChoiceTile` build a sheet
-in the same style. Swedish texts: `strings: const DevToolsStrings.sv()`.
+The menu has three sections. **Server** is the pick, opening the picker,
+which also accepts a typed URL (a `.local` name or an IP; `http://` and
+`/api` are filled in). **Faults** is what happens to requests on the way
+out (`apiConfig.faults`, a `DevFaults`): a delay, "Offline" and "Refuse
+writes", which answers every write with a 403 or a 500 of the tester's
+choice while reads keep working, so both the "not allowed" and the "server
+broke" paths can be looked at on a real screen. **App** is whatever
+`entries:` the app passes. The server pick and the delay persist across
+restarts; offline and refused writes last until the app restarts. `--dart-define=API_URL=…` sets the default for a debug
+build. `showDevSheet`, `DevSheetBody`, `DevSectionHeader` and
+`DevChoiceTile` build a sheet in the same style.
+
+The code is laid out the same way: `src/api/` is where requests go
+(`ApiConfig`, `ApiEnvironment`, `ServerPicker`), `src/faults/` what happens
+to them (`DevFaults`, `DevFaultsInterceptor`, `DevFaultsPanel`), `src/menu/`
+the way in and the rows (`DevShell`, `DevMenu`, login, reset), and
+`src/mock/` the catalog's fake server.
 
 ## Dev catalog
 
@@ -110,7 +120,7 @@ final Dio dio = Dio(BaseOptions(baseUrl: 'http://mock'))
 
 ListView(children: [
   const DevSectionHeader('Mock server'),
-  MockServerPanel(server: server),           // latency, offline, refuse writes
+  DevFaultsPanel(faults: server.faults),     // delay, offline, refused writes, as in the menu
   const DevSectionHeader('Problems'),
   DevScenarioTile(
     icon: Icons.add,
@@ -129,8 +139,8 @@ ListView(children: [
 ]);
 ```
 
-`MockHttpAdapter` waits the latency, fails to connect when offline, answers
-writes with a 500 when told to refuse them, records every request, and
+`MockHttpAdapter` waits the delay, fails to connect when offline, answers
+writes with the picked 403 or 500 when told to refuse them, records every request, and
 flattens multipart uploads to their fields and file names before calling
 the handler. The handler only has to route. Push scenarios through the
 screens' real entry points (`Screen.navigate(context)`), so the catalog
