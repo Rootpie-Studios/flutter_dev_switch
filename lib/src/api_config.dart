@@ -152,7 +152,7 @@ class ApiConfig extends ChangeNotifier {
 
   /// Hold every request back by [delay] before sending it; zero to stop.
   /// Kept in preferences like a server pick, so it survives a restart, and
-  /// shown in the [ServerBadge] so it is not forgotten.
+  /// shown in the [DevMenu]'s row so it is not forgotten.
   Future<void> pickSlowdown(
     Duration delay, [
     Future<SharedPreferences>? prefs,

@@ -6,7 +6,7 @@ import 'dev_tools_strings.dart';
 /// The request slowdown for testers: every request waits the picked time
 /// before it goes out, so loading states can be looked at on a real
 /// screen. One of [choices] is marked as in use; the pick is kept across
-/// restarts like a server pick, and the [ServerBadge] shows it.
+/// restarts like a server pick, and the [DevMenu] row shows it.
 ///
 /// Opened from the [DevMenu]; [show] for anywhere else.
 class SlowdownPicker extends StatelessWidget {

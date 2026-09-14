@@ -34,9 +34,10 @@ void main() {
   });
 
   Future<void> pump(WidgetTester tester) => tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: DevLoginButton(
+    shellApp(
+      config: config,
+      entries: [
+        devLoginEntry(
           config: config,
           accounts: accounts,
           login: (_, account) async {
@@ -44,21 +45,31 @@ void main() {
             return succeed;
           },
         ),
-      ),
+      ],
+      body: const Text('LOGO'),
     ),
   );
 
-  testWidgets('hidden on production, shown on a picked server', (tester) async {
+  Future<void> openMenu(WidgetTester tester) async {
+    await holdOn(tester, find.text('LOGO'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('not listed on production, listed on a picked server', (
+    tester,
+  ) async {
     await pump(tester);
+    await openMenu(tester);
     expect(find.text('Test login'), findsNothing);
     await config.pick(dev);
     await tester.pumpAndSettle();
-    expect(find.text('Test login'), findsOneWidget);
+    expect(find.text('Test login'), findsOneWidget, reason: 'menu follows');
   });
 
   testWidgets('picks an account and logs in with it', (tester) async {
     await config.pick(dev);
     await pump(tester);
+    await openMenu(tester);
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     expect(find.text('Test login on Dev'), findsOneWidget);
@@ -72,6 +83,7 @@ void main() {
     succeed = false;
     await config.pick(dev);
     await pump(tester);
+    await openMenu(tester);
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Admin'));
@@ -86,33 +98,7 @@ void main() {
     DevTools.enabled = false;
     await config.pick(dev);
     await pump(tester);
+    await openMenu(tester);
     expect(find.text('Test login'), findsNothing);
-  });
-
-  testWidgets('as a menu entry', (tester) async {
-    await config.pick(dev);
-    await tester.pumpWidget(
-      shellApp(
-        config: config,
-        entries: [
-          devLoginEntry(
-            config: config,
-            accounts: accounts,
-            login: (_, a) async {
-              attempted.add(a);
-              return true;
-            },
-          ),
-        ],
-        body: const Text('LOGO'),
-      ),
-    );
-    await holdOn(tester, find.text('LOGO'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Test login'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Admin'));
-    await tester.pumpAndSettle();
-    expect(attempted.single.email, 'admin@example.com');
   });
 }

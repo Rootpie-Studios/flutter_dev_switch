@@ -1,3 +1,11 @@
+## 0.6.0
+
+- `DevLoginButton` and `ServerBadge` are gone: test login is a row in the
+  menu (`devLoginEntry`, listed only off production) and the menu's Server
+  row shows the pick, so login pages carry nothing for developers.
+- `DevMenuEntry.when`: a row can be listed only when a condition holds,
+  asked again whenever the menu rebuilds.
+
 ## 0.5.0
 
 - `DevMenuTrigger` is gone: the DevShell opens the menu from every screen,

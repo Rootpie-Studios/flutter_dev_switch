@@ -14,11 +14,16 @@ class DevMenuEntry {
   final String? subtitle;
   final Future<void> Function(BuildContext context) onTap;
 
+  /// Whether to list the row, asked again whenever the menu rebuilds (it
+  /// follows the [ApiConfig]), so a row can depend on the server picked.
+  final bool Function()? when;
+
   const DevMenuEntry({
     required this.label,
     required this.icon,
     required this.onTap,
     this.subtitle,
+    this.when,
   });
 }
 
@@ -111,17 +116,18 @@ class DevMenu extends StatelessWidget {
               ),
             ),
             for (final DevMenuEntry e in entries)
-              ListTile(
-                leading: Icon(e.icon),
-                title: Text(e.label),
-                subtitle: e.subtitle == null ? null : Text(e.subtitle!),
-                onTap: () async {
-                  final NavigatorState nav = Navigator.of(context);
-                  final BuildContext root = nav.context;
-                  nav.pop();
-                  await e.onTap(root);
-                },
-              ),
+              if (e.when?.call() ?? true)
+                ListTile(
+                  leading: Icon(e.icon),
+                  title: Text(e.label),
+                  subtitle: e.subtitle == null ? null : Text(e.subtitle!),
+                  onTap: () async {
+                    final NavigatorState nav = Navigator.of(context);
+                    final BuildContext root = nav.context;
+                    nav.pop();
+                    await e.onTap(root);
+                  },
+                ),
           ],
         ),
       ),

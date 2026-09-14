@@ -41,17 +41,19 @@ MaterialApp(
   navigatorKey: navKey,
   builder: (context, child) => DevShell(
     navigatorKey: navKey,
-    open: (context) => DevMenu.show(context, config: apiConfig, entries: const [...]),
+    open: (context) => DevMenu.show(
+      context,
+      config: apiConfig,
+      entries: [
+        devLoginEntry(                                   // seeded accounts, not on production
+          config: apiConfig,
+          accounts: const [DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password')],
+          login: (context, account) => context.read<UserState>().login(account.email, account.password),
+        ),
+      ],
+    ),
     child: child!,
   ),
-);
-
-// Login page
-ServerBadge(config: apiConfig);                            // "Server: Local" when not on production
-DevLoginButton(                                            // seeded accounts, hidden on production
-  config: apiConfig,
-  accounts: const [DevAccount(label: 'Admin', email: 'admin@example.com', password: 'password')],
-  login: (context, account) => context.read<UserState>().login(account.email, account.password),
 );
 ```
 

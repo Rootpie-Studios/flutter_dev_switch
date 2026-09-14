@@ -32,12 +32,7 @@ void main() {
       config: config,
       entries: entries,
       strings: strings,
-      body: Column(
-        children: [
-          const Text('LOGO'),
-          ServerBadge(config: config),
-        ],
-      ),
+      body: const Text('LOGO'),
     ),
   );
 
@@ -79,7 +74,7 @@ void main() {
     expect(find.text('Server: Dev'), findsOneWidget, reason: 'badge');
   });
 
-  testWidgets('slow requests: picked in the menu, shown in the badge', (
+  testWidgets('slow requests: picked in the menu, shown in its row', (
     tester,
   ) async {
     await pumpLogin(tester);
@@ -91,11 +86,6 @@ void main() {
     await tester.tap(find.text('3 s'));
     await tester.pumpAndSettle();
     expect(config.slowdown, const Duration(seconds: 3));
-    expect(find.text('Slow: 3 s'), findsOneWidget, reason: 'badge');
-
-    await config.pick(dev);
-    await tester.pumpAndSettle();
-    expect(find.text('Server: Dev · Slow: 3 s'), findsOneWidget);
 
     await openMenu(tester);
     expect(find.text('3 s'), findsOneWidget, reason: 'slowdown subtitle');
@@ -104,7 +94,6 @@ void main() {
     await tester.tap(find.text('Off'));
     await tester.pumpAndSettle();
     expect(config.slowdown, Duration.zero);
-    expect(find.text('Server: Dev'), findsOneWidget);
   });
 
   testWidgets(
@@ -175,7 +164,7 @@ void main() {
     expect(find.text('Developer'), findsNothing);
   });
 
-  testWidgets('store build: no gesture, no badge', (tester) async {
+  testWidgets('store build: no gesture, no menu', (tester) async {
     DevTools.enabled = false;
     await pumpLogin(tester);
     await holdOn(tester, find.text('LOGO'));

@@ -9,8 +9,8 @@ import 'slowdown_picker.dart';
 /// of one's own (a developer machine on the LAN, best by its `.local`
 /// name), marks the one in use, and remembers the choice across restarts.
 ///
-/// Open it with [show]; nothing on screen should hint that it exists. Put a
-/// [ServerBadge] next to the logo so nobody forgets a non-production pick.
+/// Open it with [show]; nothing on screen should hint that it exists. The
+/// [DevMenu]'s Server row shows the pick.
 class ServerPicker extends StatelessWidget {
   final ApiConfig config;
   final DevToolsStrings strings;
@@ -220,48 +220,5 @@ class _CustomUrlDialogState extends State<_CustomUrlDialog> {
       ),
       TextButton(onPressed: _submit, child: Text(widget.strings.use)),
     ],
-  );
-}
-
-/// Small pill saying which server is in use and whether requests are being
-/// slowed down; nothing when it is production with no pick and no
-/// slowdown, which is the normal case. Colour defaults to the theme's
-/// primary; pass [color] to match a logo.
-class ServerBadge extends StatelessWidget {
-  final ApiConfig config;
-  final DevToolsStrings strings;
-  final Color? color;
-
-  const ServerBadge({
-    super.key,
-    required this.config,
-    this.strings = const DevToolsStrings(),
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: config,
-    builder: (context, _) {
-      final List<String> parts = [
-        if (config.isNonProduction) '${strings.serverPrefix}${config.label}',
-        if (config.hasSlowdown)
-          '${strings.slowPrefix}${formatSlowdown(config.slowdown, strings)}',
-      ];
-      if (parts.isEmpty) return const SizedBox.shrink();
-      final Color c = color ?? Theme.of(context).colorScheme.primary;
-      return Container(
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          parts.join(' · '),
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c),
-        ),
-      );
-    },
   );
 }

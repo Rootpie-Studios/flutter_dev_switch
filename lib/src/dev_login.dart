@@ -59,7 +59,7 @@ Future<DevAccount?> showDevAccountPicker(
 );
 
 /// Pick an account and log in with it, reporting failure in a snackbar.
-/// Shared by [DevLoginButton] and [devLoginEntry].
+/// What [devLoginEntry] runs.
 Future<void> runDevLogin(
   BuildContext context, {
   required ApiConfig config,
@@ -87,9 +87,10 @@ Future<void> runDevLogin(
   );
 }
 
-/// A [DevMenuEntry] for the developer menu that does the same as
-/// [DevLoginButton]. Unlike the button it is offered on every server, so
-/// only list accounts that exist where the entry can be used.
+/// A [DevMenuEntry] for the developer menu: get in as one of [accounts]
+/// without typing. Seed credentials exist on local, dev and staging
+/// servers and open nothing on production, which is the one server the
+/// row is not listed on.
 DevMenuEntry devLoginEntry({
   required ApiConfig config,
   required List<DevAccount> accounts,
@@ -98,6 +99,7 @@ DevMenuEntry devLoginEntry({
 }) => DevMenuEntry(
   label: strings.devLogin,
   icon: Icons.science_outlined,
+  when: () => config.isNonProduction,
   onTap: (BuildContext context) => runDevLogin(
     context,
     config: config,
@@ -106,71 +108,3 @@ DevMenuEntry devLoginEntry({
     strings: strings,
   ),
 );
-
-/// Developer builds only, and only while a server other than production is
-/// picked: a button to get in as one of [accounts] without typing. Seed
-/// credentials exist on local, dev and staging servers and open nothing on
-/// production, which is the one server the button hides on.
-class DevLoginButton extends StatefulWidget {
-  final ApiConfig config;
-  final List<DevAccount> accounts;
-  final DevLoginHandler login;
-  final DevToolsStrings strings;
-  final EdgeInsetsGeometry padding;
-
-  const DevLoginButton({
-    super.key,
-    required this.config,
-    required this.accounts,
-    required this.login,
-    this.strings = const DevToolsStrings(),
-    this.padding = const EdgeInsets.only(top: 16),
-  });
-
-  @override
-  State<DevLoginButton> createState() => _DevLoginButtonState();
-}
-
-class _DevLoginButtonState extends State<DevLoginButton> {
-  bool _busy = false;
-
-  Future<void> _run() async {
-    setState(() => _busy = true);
-    try {
-      await runDevLogin(
-        context,
-        config: widget.config,
-        accounts: widget.accounts,
-        login: widget.login,
-        strings: widget.strings,
-      );
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!DevTools.enabled) return const SizedBox.shrink();
-    return ListenableBuilder(
-      listenable: widget.config,
-      builder: (BuildContext context, _) {
-        if (!widget.config.isNonProduction) return const SizedBox.shrink();
-        return Padding(
-          padding: widget.padding,
-          child: OutlinedButton.icon(
-            onPressed: _busy ? null : _run,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 40),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-            ),
-            icon: const Icon(Icons.science_outlined, size: 18),
-            label: Text(
-              _busy ? widget.strings.devLoggingIn : widget.strings.devLogin,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}

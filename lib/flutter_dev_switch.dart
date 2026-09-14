@@ -12,10 +12,8 @@
 /// 4. Install a [DevShell] in `MaterialApp.builder`: a press held for a
 ///    second anywhere, a shake, or Ctrl+Shift+D opens the [DevMenu] on every
 ///    screen. Add app-specific [DevMenuEntry]s for anything else testers
-///    need, and put a [ServerBadge] under the logo so a non-production
-///    server stays visible.
-/// 5. Optionally a [DevLoginButton] with the seeded accounts, so testers get in
-///    on non-production servers without typing.
+///    need; [devLoginEntry] with the seeded accounts gets them in on
+///    non-production servers without typing.
 ///
 /// For a dev catalog (a separate entry point that opens every screen on
 /// bundled data, no server): extend [MockServer] with the app's data, answer
