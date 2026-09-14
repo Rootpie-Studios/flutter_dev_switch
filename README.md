@@ -35,6 +35,13 @@ await apiConfig.load();
 await Future.delayed(apiConfig.slowdown);   // zero unless picked in the menu
 options.baseUrl = apiConfig.baseUrl;
 
+// MaterialApp: the menu from every screen (triple tap the top trailing
+// corner, shake, or Ctrl+Shift+D)
+MaterialApp(
+  navigatorKey: navKey,
+  builder: (context, child) => DevShell(navigatorKey: navKey, open: showDevMenu, child: child!),
+);
+
 // Login page
 DevMenuTrigger(config: apiConfig, child: const Logo());   // long press opens the picker
 ServerBadge(config: apiConfig);                            // "Server: Local" when not on production

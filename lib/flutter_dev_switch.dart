@@ -9,9 +9,12 @@
 /// 3. Read `apiConfig.baseUrl` per request in the HTTP client's interceptor,
 ///    and await `apiConfig.slowdown` there too so the dev menu's request
 ///    slowdown applies.
-/// 4. Wrap the logo on the login page in [DevMenuTrigger]; put a [ServerBadge]
-///    under it. Add app-specific [DevMenuEntry]s for anything else testers need.
-///    [DevMenu.show] opens the same menu from anywhere else, e.g. settings.
+/// 4. Install a [DevShell] in `MaterialApp.builder`: a triple tap on the top
+///    trailing corner, a shake, or Ctrl+Shift+D opens the menu on every
+///    screen. Add app-specific [DevMenuEntry]s for anything else testers
+///    need. [DevMenuTrigger] (a long press on a logo) and [DevMenu.show]
+///    (e.g. from settings) are further ways in, with a [ServerBadge] to keep
+///    a non-production server visible.
 /// 5. Optionally a [DevLoginButton] with the seeded accounts, so testers get in
 ///    on non-production servers without typing.
 ///
@@ -31,6 +34,7 @@ export 'src/api_config.dart';
 export 'src/api_environment.dart';
 export 'src/dev_login.dart';
 export 'src/dev_menu.dart';
+export 'src/dev_shell.dart';
 export 'src/dev_tools.dart';
 export 'src/dev_tools_strings.dart';
 export 'src/server_picker.dart';
