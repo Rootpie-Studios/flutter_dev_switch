@@ -24,9 +24,8 @@ class DevMenuEntry {
 
 /// The hidden developer menu: a "Server" row that opens the [ServerPicker],
 /// a "Slow requests" row that opens the [SlowdownPicker], then whatever
-/// [entries] the app adds. Open it with [show] from anywhere (a settings
-/// page, say), or wrap a logo in [DevMenuTrigger] so a long press opens it.
-/// Shows nothing and does nothing unless [DevTools.enabled].
+/// [entries] the app adds. [show] opens it; the [DevShell] calls that from
+/// every screen. Shows nothing and does nothing unless [DevTools.enabled].
 class DevMenu extends StatelessWidget {
   final ApiConfig config;
   final List<DevMenuEntry> entries;
@@ -137,40 +136,4 @@ void _swapFor(BuildContext context, void Function(BuildContext root) sheet) {
   final BuildContext root = nav.context;
   nav.pop();
   sheet(root);
-}
-
-/// Wraps a logo or wordmark so that a long press opens the [DevMenu].
-/// Nothing on screen hints at it, and in a store build the gesture is not
-/// even attached. Put a [ServerBadge] under it so a non-production server
-/// stays visible.
-class DevMenuTrigger extends StatelessWidget {
-  final Widget child;
-  final ApiConfig config;
-  final List<DevMenuEntry> entries;
-  final DevToolsStrings strings;
-  final String customExample;
-
-  const DevMenuTrigger({
-    super.key,
-    required this.child,
-    required this.config,
-    this.entries = const [],
-    this.strings = const DevToolsStrings(),
-    this.customExample = 'http://my-macbook.local/api',
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onLongPress: DevTools.enabled
-        ? () => DevMenu.show(
-            context,
-            config: config,
-            entries: entries,
-            strings: strings,
-            customExample: customExample,
-          )
-        : null,
-    child: child,
-  );
 }

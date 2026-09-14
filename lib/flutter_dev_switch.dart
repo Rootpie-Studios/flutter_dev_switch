@@ -10,11 +10,10 @@
 ///    and await `apiConfig.slowdown` there too so the dev menu's request
 ///    slowdown applies.
 /// 4. Install a [DevShell] in `MaterialApp.builder`: a press held for a
-///    second anywhere, a shake, or Ctrl+Shift+D opens the menu on every
+///    second anywhere, a shake, or Ctrl+Shift+D opens the [DevMenu] on every
 ///    screen. Add app-specific [DevMenuEntry]s for anything else testers
-///    need. [DevMenuTrigger] (a long press on a logo) and [DevMenu.show]
-///    (e.g. from settings) are further ways in, with a [ServerBadge] to keep
-///    a non-production server visible.
+///    need, and put a [ServerBadge] under the logo so a non-production
+///    server stays visible.
 /// 5. Optionally a [DevLoginButton] with the seeded accounts, so testers get in
 ///    on non-production servers without typing.
 ///

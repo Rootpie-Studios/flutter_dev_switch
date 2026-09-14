@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'widgets_test.dart' show shellApp, holdOn;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dev_switch/flutter_dev_switch.dart';
 
@@ -90,26 +92,22 @@ void main() {
   testWidgets('as a menu entry', (tester) async {
     await config.pick(dev);
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: DevMenuTrigger(
+      shellApp(
+        config: config,
+        entries: [
+          devLoginEntry(
             config: config,
-            entries: [
-              devLoginEntry(
-                config: config,
-                accounts: accounts,
-                login: (_, a) async {
-                  attempted.add(a);
-                  return true;
-                },
-              ),
-            ],
-            child: const Text('LOGO'),
+            accounts: accounts,
+            login: (_, a) async {
+              attempted.add(a);
+              return true;
+            },
           ),
-        ),
+        ],
+        body: const Text('LOGO'),
       ),
     );
-    await tester.longPress(find.text('LOGO'));
+    await holdOn(tester, find.text('LOGO'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Test login'));
     await tester.pumpAndSettle();

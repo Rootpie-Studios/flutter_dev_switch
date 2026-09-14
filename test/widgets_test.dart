@@ -26,27 +26,23 @@ void main() {
   Future<void> pumpLogin(
     WidgetTester tester, {
     List<DevMenuEntry> entries = const [],
-  }) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Column(
-            children: [
-              DevMenuTrigger(
-                config: config,
-                entries: entries,
-                child: const Text('LOGO'),
-              ),
-              ServerBadge(config: config),
-            ],
-          ),
-        ),
+    DevToolsStrings strings = const DevToolsStrings(),
+  }) => tester.pumpWidget(
+    shellApp(
+      config: config,
+      entries: entries,
+      strings: strings,
+      body: Column(
+        children: [
+          const Text('LOGO'),
+          ServerBadge(config: config),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Future<void> openMenu(WidgetTester tester) async {
-    await tester.longPress(find.text('LOGO'));
+    await holdOn(tester, find.text('LOGO'));
     await tester.pumpAndSettle();
   }
 
@@ -182,29 +178,53 @@ void main() {
   testWidgets('store build: no gesture, no badge', (tester) async {
     DevTools.enabled = false;
     await pumpLogin(tester);
-    await tester.longPress(find.text('LOGO'));
+    await holdOn(tester, find.text('LOGO'));
     await tester.pumpAndSettle();
     expect(find.text('Developer'), findsNothing);
     expect(find.textContaining('Server'), findsNothing);
   });
 
   testWidgets('Swedish strings', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: DevMenuTrigger(
-            config: config,
-            entries: const [noop],
-            strings: const DevToolsStrings.sv(),
-            child: const Text('LOGO'),
-          ),
-        ),
-      ),
+    await pumpLogin(
+      tester,
+      entries: const [noop],
+      strings: const DevToolsStrings.sv(),
     );
-    await tester.longPress(find.text('LOGO'));
-    await tester.pumpAndSettle();
+    await openMenu(tester);
     expect(find.text('Utvecklare'), findsOneWidget);
   });
 }
 
 Future<void> _nothing(BuildContext _) async {}
+
+/// An app with the [DevShell] installed the way the apps do it.
+Widget shellApp({
+  required ApiConfig config,
+  List<DevMenuEntry> entries = const [],
+  DevToolsStrings strings = const DevToolsStrings(),
+  required Widget body,
+}) {
+  final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+  return MaterialApp(
+    navigatorKey: navKey,
+    builder: (context, child) => DevShell(
+      navigatorKey: navKey,
+      shake: false,
+      open: (context) => DevMenu.show(
+        context,
+        config: config,
+        entries: entries,
+        strings: strings,
+      ),
+      child: child!,
+    ),
+    home: Scaffold(body: body),
+  );
+}
+
+/// The shell's press: held longer than a plain long press.
+Future<void> holdOn(WidgetTester tester, Finder finder) async {
+  final TestGesture press = await tester.startGesture(tester.getCenter(finder));
+  await tester.pump(const Duration(milliseconds: 1200));
+  await press.up();
+}

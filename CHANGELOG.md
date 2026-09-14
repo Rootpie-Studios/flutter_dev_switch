@@ -1,3 +1,15 @@
+## 0.5.0
+
+- `DevMenuTrigger` is gone: the DevShell opens the menu from every screen,
+  so a logo no longer has to. Put a `ServerBadge` under the logo as before.
+
+## 0.4.0
+
+- `DevShell`, installed once in `MaterialApp.builder`: a press held for a
+  second anywhere, a shake on a device, or Ctrl+Shift+D / Cmd+Shift+D opens
+  the DevMenu on every screen, over nested navigators and dialogs. Nothing
+  is attached in a store build. Adds a dependency on sensors_plus.
+
 ## 0.3.0
 
 - Request slowdown: `ApiConfig.slowdown` / `pickSlowdown`, a "Slow requests"

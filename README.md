@@ -39,11 +39,14 @@ options.baseUrl = apiConfig.baseUrl;
 // a second, shake, or Ctrl+Shift+D)
 MaterialApp(
   navigatorKey: navKey,
-  builder: (context, child) => DevShell(navigatorKey: navKey, open: showDevMenu, child: child!),
+  builder: (context, child) => DevShell(
+    navigatorKey: navKey,
+    open: (context) => DevMenu.show(context, config: apiConfig, entries: const [...]),
+    child: child!,
+  ),
 );
 
 // Login page
-DevMenuTrigger(config: apiConfig, child: const Logo());   // long press opens the picker
 ServerBadge(config: apiConfig);                            // "Server: Local" when not on production
 DevLoginButton(                                            // seeded accounts, hidden on production
   config: apiConfig,
@@ -55,9 +58,8 @@ DevLoginButton(                                            // seeded accounts, h
 The picker also accepts a typed URL (a `.local` name or an IP; `http://` and
 `/api` are filled in). Picks persist across restarts, the request slowdown
 too, and the badge shows both. `--dart-define=API_URL=…` sets the default for
-a debug build. Pass `entries:` to `DevMenuTrigger` to add your own rows after
-Server and Slow requests. `DevMenu.show(context, config: apiConfig, …)` opens
-the same menu from a settings page. Swedish texts:
+a debug build. Pass `entries:` to `DevMenu.show` to add your own rows after
+Server and Slow requests. Swedish texts:
 `strings: const DevToolsStrings.sv()`.
 
 ## Dev catalog
