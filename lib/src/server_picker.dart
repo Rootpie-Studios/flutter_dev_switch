@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'api_config.dart';
 import 'api_environment.dart';
 import 'dev_tools_strings.dart';
-import 'slowdown_picker.dart';
 
 /// The hidden server switch for testers. Lists the known servers plus a URL
 /// of one's own (a developer machine on the LAN, best by its `.local`

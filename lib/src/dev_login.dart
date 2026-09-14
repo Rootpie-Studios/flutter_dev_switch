@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'api_config.dart';
 import 'dev_menu.dart';
-import 'dev_tools.dart';
 import 'dev_tools_strings.dart';
 
 /// A seeded account testers can log in as without typing.

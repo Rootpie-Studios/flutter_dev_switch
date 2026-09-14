@@ -71,7 +71,8 @@ void main() {
     await tester.tap(find.text('Dev'));
     await tester.pumpAndSettle();
     expect(config.picked, dev);
-    expect(find.text('Server: Dev'), findsOneWidget, reason: 'badge');
+    await openMenu(tester);
+    expect(find.text(dev.baseUrl), findsOneWidget, reason: 'server subtitle');
   });
 
   testWidgets('slow requests: picked in the menu, shown in its row', (
@@ -113,7 +114,8 @@ void main() {
       await tester.tap(find.text('Dev'));
       await tester.pumpAndSettle();
       expect(config.picked, dev);
-      expect(find.text('Server: Dev'), findsOneWidget, reason: 'badge');
+      await openMenu(tester);
+      expect(find.text(dev.baseUrl), findsOneWidget, reason: 'server subtitle');
     },
   );
 
@@ -133,7 +135,6 @@ void main() {
     await tester.tap(find.text('Use'));
     await tester.pumpAndSettle();
     expect(config.baseUrl, 'http://192.168.55.6/api');
-    expect(find.text('Server: http://192.168.55.6/api'), findsOneWidget);
 
     await openServerPicker(tester);
     await tester.tap(find.text('Custom address'));
