@@ -20,33 +20,32 @@ import 'dev_tools.dart';
 ///
 /// Three ways in, all of them gone from a store build:
 ///
-/// - a triple tap on the bottom trailing corner, in the strip beside the
-///   home indicator, on every screen. Apps keep their widgets above that
-///   strip, so nothing is in the way, and the spot is a [Listener] that
-///   only counts taps, so nothing underneath is blocked either. (The
-///   status bar would be the other candidate, but iOS keeps its taps.);
+/// - two fingers held still on the screen for [hold], anywhere. A pinch
+///   moves at once, so it never counts. The whole screen is a [Listener]
+///   that only watches the pointers, so nothing underneath is blocked.
+///   (A corner spot was tried first: iOS keeps taps in the status bar and
+///   beside the home indicator, and every corner inside the safe area
+///   has a button on some screen.);
 /// - a shake, on a device. The simulator's shake gesture does not reach
-///   the accelerometer, so there the corner is the way;
+///   the accelerometer, so there the hold is the way;
 /// - Ctrl+Shift+D or Cmd+Shift+D on a hardware keyboard.
 ///
 /// [open] gets the root navigator's context, so the menu shows over
 /// whatever is up, nested navigators and dialogs included.
 class DevShell extends StatefulWidget {
-  /// The corner hotspot, for tests.
+  /// The pointer watcher, for tests.
   @visibleForTesting
-  static const Key hotspotKey = Key('dev-shell-hotspot');
+  static const Key listenerKey = Key('dev-shell-listener');
 
   final GlobalKey<NavigatorState> navigatorKey;
   final Future<void> Function(BuildContext context) open;
   final Widget child;
 
-  /// Taps within this window count as one sequence.
-  final Duration tapWindow;
-  final int taps;
+  /// How long two fingers have to stay put.
+  final Duration hold;
 
-  /// Width of the spot; its height is the bottom safe-area inset, or
-  /// this where there is none.
-  final double hotspotSize;
+  /// How far a finger may drift during the hold.
+  final double slop;
   final bool shake;
   final bool keyboard;
 
@@ -55,9 +54,8 @@ class DevShell extends StatefulWidget {
     required this.navigatorKey,
     required this.open,
     required this.child,
-    this.tapWindow = const Duration(milliseconds: 1000),
-    this.taps = 3,
-    this.hotspotSize = 64,
+    this.hold = const Duration(milliseconds: 1500),
+    this.slop = 24,
     this.shake = true,
     this.keyboard = true,
   });
@@ -67,8 +65,9 @@ class DevShell extends StatefulWidget {
 }
 
 class _DevShellState extends State<DevShell> {
-  int _tapCount = 0;
-  Timer? _tapTimer;
+  /// Where each pointer went down, by pointer id.
+  final Map<int, Offset> _down = {};
+  Timer? _holdTimer;
   bool _opening = false;
   StreamSubscription<UserAccelerometerEvent>? _motion;
   DateTime _lastShake = DateTime.fromMillisecondsSinceEpoch(0);
@@ -100,29 +99,39 @@ class _DevShellState extends State<DevShell> {
         cancelOnError: true,
       );
     } catch (_) {
-      // No sensors on this platform: the corner and the keyboard remain.
+      // No sensors on this platform: the hold and the keyboard remain.
     }
   }
 
   @override
   void dispose() {
     _motion?.cancel();
-    _tapTimer?.cancel();
+    _holdTimer?.cancel();
     super.dispose();
   }
 
-  /// The first tap starts the window; the sequence is forgotten when it
-  /// closes without the count being reached.
-  void _tap() {
-    _tapCount++;
-    if (_tapCount == 1) {
-      _tapTimer = Timer(widget.tapWindow, () => _tapCount = 0);
-      return;
-    }
-    if (_tapCount < widget.taps) return;
-    _tapTimer?.cancel();
-    _tapCount = 0;
-    _open();
+  // ---- The two-finger hold. Exactly two pointers down, none of them
+  // drifting, for the whole of [DevShell.hold].
+
+  void _pointerDown(PointerDownEvent e) {
+    _down[e.pointer] = e.position;
+    _holdTimer?.cancel();
+    if (_down.length != 2) return;
+    _holdTimer = Timer(widget.hold, () {
+      _down.clear();
+      _open();
+    });
+  }
+
+  void _pointerMove(PointerMoveEvent e) {
+    final Offset? start = _down[e.pointer];
+    if (start == null) return;
+    if ((e.position - start).distance > widget.slop) _holdTimer?.cancel();
+  }
+
+  void _pointerEnd(PointerEvent e) {
+    _down.remove(e.pointer);
+    _holdTimer?.cancel();
   }
 
   Future<void> _open() async {
@@ -140,19 +149,17 @@ class _DevShellState extends State<DevShell> {
   @override
   Widget build(BuildContext context) {
     if (!DevTools.enabled) return widget.child;
-    final double inset = MediaQuery.paddingOf(context).bottom;
     Widget shell = Stack(
       children: [
         widget.child,
-        PositionedDirectional(
-          bottom: 0,
-          end: 0,
-          width: widget.hotspotSize,
-          height: inset > 0 ? inset : widget.hotspotSize,
+        Positioned.fill(
           child: Listener(
-            key: DevShell.hotspotKey,
+            key: DevShell.listenerKey,
             behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) => _tap(),
+            onPointerDown: _pointerDown,
+            onPointerMove: _pointerMove,
+            onPointerUp: _pointerEnd,
+            onPointerCancel: _pointerEnd,
           ),
         ),
       ],
