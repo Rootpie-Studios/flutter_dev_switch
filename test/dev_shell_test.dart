@@ -7,6 +7,7 @@ void main() {
   final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
   int opened = 0;
   int buttonTaps = 0;
+  int buttonLongPresses = 0;
 
   Widget app() => MaterialApp(
     navigatorKey: navKey,
@@ -17,11 +18,15 @@ void main() {
       child: child!,
     ),
     home: Scaffold(
-      body: Center(
-        child: TextButton(
-          onPressed: () => buttonTaps++,
-          child: const Text('button'),
-        ),
+      body: Column(
+        children: [
+          TextButton(
+            onPressed: () => buttonTaps++,
+            onLongPress: () => buttonLongPresses++,
+            child: const Text('button'),
+          ),
+          const Expanded(child: SizedBox.expand()),
+        ],
       ),
     ),
   );
@@ -29,69 +34,62 @@ void main() {
   setUp(() {
     opened = 0;
     buttonTaps = 0;
+    buttonLongPresses = 0;
     DevTools.enabled = true;
   });
 
-  const Offset a = Offset(100, 300);
-  const Offset b = Offset(200, 300);
+  const Offset empty = Offset(200, 400);
 
-  testWidgets('two fingers held still open the menu', (tester) async {
+  testWidgets('a press held on empty space opens the menu', (tester) async {
     await tester.pumpWidget(app());
-    final TestGesture one = await tester.startGesture(a, pointer: 1);
-    final TestGesture two = await tester.startGesture(b, pointer: 2);
-    await tester.pump(const Duration(seconds: 2));
+    final TestGesture press = await tester.startGesture(empty);
+    await tester.pump(const Duration(milliseconds: 1200));
     expect(opened, 1);
-    await one.up();
-    await two.up();
+    await press.up();
   });
 
-  testWidgets('one finger is not enough', (tester) async {
+  testWidgets('a short press does not', (tester) async {
     await tester.pumpWidget(app());
-    final TestGesture one = await tester.startGesture(a, pointer: 1);
+    final TestGesture press = await tester.startGesture(empty);
+    await tester.pump(const Duration(milliseconds: 300));
+    await press.up();
     await tester.pump(const Duration(seconds: 2));
     expect(opened, 0);
-    await one.up();
   });
 
-  testWidgets('a pinch does not count', (tester) async {
+  testWidgets('a drag does not', (tester) async {
     await tester.pumpWidget(app());
-    final TestGesture one = await tester.startGesture(a, pointer: 1);
-    final TestGesture two = await tester.startGesture(b, pointer: 2);
-    await tester.pump(const Duration(milliseconds: 500));
-    await two.moveBy(const Offset(60, 0));
+    final TestGesture press = await tester.startGesture(empty);
+    await tester.pump(const Duration(milliseconds: 200));
+    await press.moveBy(const Offset(0, 80));
     await tester.pump(const Duration(seconds: 2));
     expect(opened, 0);
-    await one.up();
-    await two.up();
+    await press.up();
   });
 
-  testWidgets('lifting a finger early cancels', (tester) async {
+  testWidgets("a widget's own long press wins", (tester) async {
     await tester.pumpWidget(app());
-    final TestGesture one = await tester.startGesture(a, pointer: 1);
-    final TestGesture two = await tester.startGesture(b, pointer: 2);
-    await tester.pump(const Duration(milliseconds: 500));
-    await two.up();
+    await tester.longPress(find.text('button'));
     await tester.pump(const Duration(seconds: 2));
+    expect(buttonLongPresses, 1);
     expect(opened, 0);
-    await one.up();
   });
 
-  testWidgets('the app underneath still gets its taps', (tester) async {
+  testWidgets('taps still reach the app', (tester) async {
     await tester.pumpWidget(app());
     await tester.tap(find.text('button'));
     expect(buttonTaps, 1);
+    expect(opened, 0);
   });
 
   testWidgets('nothing is attached in a store build', (tester) async {
     DevTools.enabled = false;
     await tester.pumpWidget(app());
-    expect(find.byKey(DevShell.listenerKey), findsNothing);
-    final TestGesture one = await tester.startGesture(a, pointer: 1);
-    final TestGesture two = await tester.startGesture(b, pointer: 2);
+    expect(find.byKey(DevShell.detectorKey), findsNothing);
+    final TestGesture press = await tester.startGesture(empty);
     await tester.pump(const Duration(seconds: 2));
     expect(opened, 0);
-    await one.up();
-    await two.up();
+    await press.up();
   });
 
   testWidgets('Ctrl+Shift+D opens the menu', (tester) async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -20,32 +21,31 @@ import 'dev_tools.dart';
 ///
 /// Three ways in, all of them gone from a store build:
 ///
-/// - two fingers held still on the screen for [hold], anywhere. A pinch
-///   moves at once, so it never counts. The whole screen is a [Listener]
-///   that only watches the pointers, so nothing underneath is blocked.
-///   (A corner spot was tried first: iOS keeps taps in the status bar and
-///   beside the home indicator, and every corner inside the safe area
-///   has a button on some screen.);
+/// - a long press, anywhere, held for [hold]. The shell wraps the app in
+///   a gesture detector, so it is the outermost member of the gesture
+///   arena: anything underneath with a long press of its own (a text
+///   field, a logo) wins as usual, a tap wins on release, a drag wins as
+///   soon as it moves, and only a press held where nothing else claims it
+///   opens the menu. (A corner spot was tried first: iOS keeps taps in the
+///   status bar and beside the home indicator, and every corner inside
+///   the safe area has a button on some screen.);
 /// - a shake, on a device. The simulator's shake gesture does not reach
-///   the accelerometer, so there the hold is the way;
+///   the accelerometer, so there the press is the way;
 /// - Ctrl+Shift+D or Cmd+Shift+D on a hardware keyboard.
 ///
 /// [open] gets the root navigator's context, so the menu shows over
 /// whatever is up, nested navigators and dialogs included.
 class DevShell extends StatefulWidget {
-  /// The pointer watcher, for tests.
+  /// The gesture detector, for tests.
   @visibleForTesting
-  static const Key listenerKey = Key('dev-shell-listener');
+  static const Key detectorKey = Key('dev-shell-detector');
 
   final GlobalKey<NavigatorState> navigatorKey;
   final Future<void> Function(BuildContext context) open;
   final Widget child;
 
-  /// How long two fingers have to stay put.
+  /// How long the press has to be held.
   final Duration hold;
-
-  /// How far a finger may drift during the hold.
-  final double slop;
   final bool shake;
   final bool keyboard;
 
@@ -54,8 +54,7 @@ class DevShell extends StatefulWidget {
     required this.navigatorKey,
     required this.open,
     required this.child,
-    this.hold = const Duration(milliseconds: 1500),
-    this.slop = 24,
+    this.hold = const Duration(milliseconds: 1000),
     this.shake = true,
     this.keyboard = true,
   });
@@ -65,9 +64,6 @@ class DevShell extends StatefulWidget {
 }
 
 class _DevShellState extends State<DevShell> {
-  /// Where each pointer went down, by pointer id.
-  final Map<int, Offset> _down = {};
-  Timer? _holdTimer;
   bool _opening = false;
   StreamSubscription<UserAccelerometerEvent>? _motion;
   DateTime _lastShake = DateTime.fromMillisecondsSinceEpoch(0);
@@ -106,32 +102,7 @@ class _DevShellState extends State<DevShell> {
   @override
   void dispose() {
     _motion?.cancel();
-    _holdTimer?.cancel();
     super.dispose();
-  }
-
-  // ---- The two-finger hold. Exactly two pointers down, none of them
-  // drifting, for the whole of [DevShell.hold].
-
-  void _pointerDown(PointerDownEvent e) {
-    _down[e.pointer] = e.position;
-    _holdTimer?.cancel();
-    if (_down.length != 2) return;
-    _holdTimer = Timer(widget.hold, () {
-      _down.clear();
-      _open();
-    });
-  }
-
-  void _pointerMove(PointerMoveEvent e) {
-    final Offset? start = _down[e.pointer];
-    if (start == null) return;
-    if ((e.position - start).distance > widget.slop) _holdTimer?.cancel();
-  }
-
-  void _pointerEnd(PointerEvent e) {
-    _down.remove(e.pointer);
-    _holdTimer?.cancel();
   }
 
   Future<void> _open() async {
@@ -149,20 +120,17 @@ class _DevShellState extends State<DevShell> {
   @override
   Widget build(BuildContext context) {
     if (!DevTools.enabled) return widget.child;
-    Widget shell = Stack(
-      children: [
-        widget.child,
-        Positioned.fill(
-          child: Listener(
-            key: DevShell.listenerKey,
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: _pointerDown,
-            onPointerMove: _pointerMove,
-            onPointerUp: _pointerEnd,
-            onPointerCancel: _pointerEnd,
-          ),
-        ),
-      ],
+    Widget shell = RawGestureDetector(
+      key: DevShell.detectorKey,
+      behavior: HitTestBehavior.translucent,
+      gestures: {
+        LongPressGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+              () => LongPressGestureRecognizer(duration: widget.hold),
+              (recognizer) => recognizer.onLongPress = _open,
+            ),
+      },
+      child: widget.child,
     );
     if (widget.keyboard) {
       shell = CallbackShortcuts(

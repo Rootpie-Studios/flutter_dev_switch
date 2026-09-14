@@ -35,8 +35,8 @@ await apiConfig.load();
 await Future.delayed(apiConfig.slowdown);   // zero unless picked in the menu
 options.baseUrl = apiConfig.baseUrl;
 
-// MaterialApp: the menu from every screen (hold two fingers still for
-// 1.5 s, shake, or Ctrl+Shift+D)
+// MaterialApp: the menu from every screen (press and hold anywhere for
+// a second, shake, or Ctrl+Shift+D)
 MaterialApp(
   navigatorKey: navKey,
   builder: (context, child) => DevShell(navigatorKey: navKey, open: showDevMenu, child: child!),
