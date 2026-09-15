@@ -9,7 +9,7 @@
 /// 2. In `main`, before the first request: `await DevTools.load(); await apiConfig.load();`.
 /// 3. In the HTTP client, read `apiConfig.baseUrl` per request, and add a
 ///    `DevFaultsInterceptor(apiConfig.faults)` in front of the app's own,
-///    so the menu's delay, "offline" and "refuse writes" apply to the
+///    so the menu's delay, "offline" and "refuse requests" apply to the
 ///    live API.
 /// 4. Install a [DevShell] in `MaterialApp.builder`: a press held for a
 ///    second anywhere, or Ctrl+Shift+D, opens the [DevMenu] on every

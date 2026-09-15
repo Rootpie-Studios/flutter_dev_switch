@@ -67,7 +67,7 @@ void main() {
   );
 
   test(
-    'refuse writes: the picked status for a POST, reads still work',
+    'refuse requests: the picked status for a POST, reads still work',
     () async {
       config.faults.refuseWith = 403;
       await dio.get('/x');
@@ -98,6 +98,22 @@ void main() {
     },
   );
 
+  test('refuse with a 401: the session is over, so reads get it too', () async {
+    config.faults.refuseWith = DevFaults.sessionOver;
+    expect(config.faults.refusalFor('GET'), 401);
+    expect(config.faults.refusalFor('POST'), 401);
+    final DioException e = await dio
+        .get('/x')
+        .then<DioException>(
+          (_) => fail('sent'),
+          onError: (Object e) => e as DioException,
+        );
+    expect(e.response?.statusCode, 401);
+    expect(adapter.reached, 0);
+    config.faults.refuseWith = 403;
+    expect(config.faults.refusalFor('GET'), isNull);
+  });
+
   test('the switches notify', () {
     int notified = 0;
     config.faults.addListener(() => notified++);
@@ -108,6 +124,6 @@ void main() {
     expect(notified, 2);
     config.faults.reset();
     expect(notified, 3);
-    expect(config.faults.refuseWrites, isFalse);
+    expect(config.faults.refusing, isFalse);
   });
 }

@@ -38,7 +38,7 @@ class ApiConfig extends ChangeNotifier {
   /// (the developer's own machine on the LAN) is one tap away.
   final String customExample;
 
-  /// What happens to requests: the delay, "offline" and "refuse writes",
+  /// What happens to requests: the delay, "offline" and "refuse requests",
   /// applied by a `DevFaultsInterceptor` in the HTTP client. Loaded and
   /// saved along with the server pick.
   final DevFaults faults;

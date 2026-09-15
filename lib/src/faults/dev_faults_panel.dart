@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'dev_faults.dart';
 
-/// The three knobs of a [DevFaults]: the delay and the refused writes'
-/// status as rows of choices, "Offline" as a switch. Rebuilds as they
+/// The three knobs of a [DevFaults]: the delay and the refusal as rows of
+/// choices, "Offline" as a switch. The refusal row says what the picked
+/// status hits: writes for a 403 or a 500, every request for a 401. Rebuilds as they
 /// change.
 /// The developer menu shows one for the live API; a dev catalog shows one
 /// for its mock server.
@@ -52,11 +53,16 @@ class DevFaultsPanel extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.block_outlined),
-          title: const Text('Refuse writes'),
+          title: const Text('Refuse requests'),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Writes get this status; reads still work'),
+              Text(switch (faults.refuseWith) {
+                null => 'Writes get a 403 or a 500; every request gets a 401',
+                DevFaults.sessionOver =>
+                  'Every request gets a 401: the session is over',
+                final int s => 'Writes get a $s; reads still work',
+              }),
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: SegmentedButton<int?>(

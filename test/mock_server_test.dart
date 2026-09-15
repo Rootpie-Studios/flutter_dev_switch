@@ -71,7 +71,7 @@ void main() {
   });
 
   test(
-    'refuse writes: writes get the picked status, reads still work',
+    'refuse requests: writes get the picked status, reads still work',
     () async {
       server.faults.refuseWith = 403;
       expect((await dio.get('/things')).statusCode, 200);
@@ -86,6 +86,19 @@ void main() {
         ),
       );
       expect(server.requests.first.status, 403);
+
+      server.faults.refuseWith = DevFaults.sessionOver;
+      await expectLater(
+        dio.get('/things'),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.response?.statusCode,
+            'status',
+            401,
+          ),
+        ),
+        reason: 'a dead session rejects reads too',
+      );
     },
   );
 

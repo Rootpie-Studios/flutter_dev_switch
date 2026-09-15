@@ -38,7 +38,7 @@ await DevTools.load();
 await apiConfig.load();
 
 // HTTP client
-dio.interceptors.add(DevFaultsInterceptor(apiConfig.faults));   // delay, offline, refused writes, as picked in the menu
+dio.interceptors.add(DevFaultsInterceptor(apiConfig.faults));   // delay, offline, refused requests, as picked in the menu (after the token interceptor, so a 401 ends the session)
 // and per request, in the app's own interceptor:
 options.baseUrl = apiConfig.baseUrl;
 
@@ -76,11 +76,12 @@ The menu has three sections. **Server** is the pick, opening the picker,
 which also accepts a typed URL (a `.local` name or an IP; `http://` and
 `/api` are filled in). **Faults** is what happens to requests on the way
 out (`apiConfig.faults`, a `DevFaults`): a delay, "Offline" and "Refuse
-writes", which answers every write with a 403 or a 500 of the tester's
-choice while reads keep working, so both the "not allowed" and the "server
-broke" paths can be looked at on a real screen. **App** is whatever
+requests", which answers every write with a 403 or a 500 of the tester's
+choice while reads keep working, or every request with a 401 as a dead
+session would, so the "not allowed", "server broke" and "logged out"
+paths can all be looked at on a real screen. **App** is whatever
 `entries:` the app passes. The server pick and the delay persist across
-restarts; offline and refused writes last until the app restarts. `--dart-define=API_URL=…` sets the default for a debug
+restarts; offline and refused requests last until the app restarts. `--dart-define=API_URL=…` sets the default for a debug
 build. `showDevSheet`, `DevSheetBody`, `DevSectionHeader` and
 `DevChoiceTile` build a sheet in the same style.
 
@@ -120,7 +121,7 @@ final Dio dio = Dio(BaseOptions(baseUrl: 'http://mock'))
 
 ListView(children: [
   const DevSectionHeader('Mock server'),
-  DevFaultsPanel(faults: server.faults),     // delay, offline, refused writes, as in the menu
+  DevFaultsPanel(faults: server.faults),     // delay, offline, refused requests, as in the menu
   const DevSectionHeader('Problems'),
   DevScenarioTile(
     icon: Icons.add,
@@ -140,7 +141,7 @@ ListView(children: [
 ```
 
 `MockHttpAdapter` waits the delay, fails to connect when offline, answers
-writes with the picked 403 or 500 when told to refuse them, records every request, and
+writes with the picked 403 or 500 (every request with a picked 401) when told to refuse, records every request, and
 flattens multipart uploads to their fields and file names before calling
 the handler. The handler only has to route. Push scenarios through the
 screens' real entry points (`Screen.navigate(context)`), so the catalog

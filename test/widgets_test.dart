@@ -61,7 +61,7 @@ void main() {
     expect(find.text('Delay'), findsOneWidget);
     expect(find.text('Off'), findsNWidgets(2), reason: 'no delay, no refusal');
     expect(find.text('Offline'), findsOneWidget);
-    expect(find.text('Refuse writes'), findsOneWidget);
+    expect(find.text('Refuse requests'), findsOneWidget);
     expect(find.text('APP'), findsNothing, reason: 'nothing to list');
 
     await tester.tap(find.text('Production'));
@@ -170,7 +170,9 @@ void main() {
     expect(find.text('Developer'), findsNothing);
   });
 
-  testWidgets('offline and refuse writes: picked in the menu', (tester) async {
+  testWidgets('offline and refuse requests: picked in the menu', (
+    tester,
+  ) async {
     await pumpLogin(tester);
     await openMenu(tester);
     expect(find.text('Offline'), findsOneWidget);
@@ -180,17 +182,22 @@ void main() {
     await tester.tap(find.text('403'));
     await tester.pumpAndSettle();
     expect(config.faults.refuseWith, 403);
+    expect(find.text('Writes get a 403; reads still work'), findsOneWidget);
+    await tester.tap(find.text('401'));
+    await tester.pumpAndSettle();
+    expect(config.faults.refuseWith, 401);
+    expect(find.textContaining('Every request gets a 401'), findsOneWidget);
     await tester.tap(find.text('500'));
     await tester.pumpAndSettle();
     expect(config.faults.refuseWith, 500);
     await tester.tap(
       find.descendant(
-        of: find.widgetWithText(ListTile, 'Refuse writes'),
+        of: find.widgetWithText(ListTile, 'Refuse requests'),
         matching: find.text('Off'),
       ),
     );
     await tester.pumpAndSettle();
-    expect(config.faults.refuseWrites, isFalse);
+    expect(config.faults.refusing, isFalse);
     await tester.tap(find.text('Offline'));
     await tester.pumpAndSettle();
     expect(config.faults.offline, isFalse);

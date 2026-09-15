@@ -24,7 +24,7 @@ class MockRequest {
 }
 
 /// A fake server for a dev catalog: how it behaves ([faults], the same
-/// delay, offline and refuse-writes knobs the developer menu has for the
+/// delay, offline and refuse-requests knobs the developer menu has for the
 /// live API) and what it has been asked ([requests], so a screen's traffic
 /// can be read afterwards in a MockRequestLog).
 ///

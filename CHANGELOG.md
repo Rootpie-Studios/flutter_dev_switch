@@ -1,3 +1,15 @@
+## 0.10.0
+
+- "Refuse writes" is "Refuse requests", and a 401 is among the answers
+  (`DevFaults.sessionOver`, first among `refusals`). A 401 answers reads
+  too, since a token the server no longer accepts is rejected on every
+  request, so an app that ends its session on a 401 can be seen doing so
+  from the menu; a 403 or a 500 still hits writes only. The row's
+  subtitle says what the picked status hits. `refuseWrites` is `refusing`.
+  `DevFaultsInterceptor` now documents that it belongs after the
+  interceptor attaching the app's token when the app tells a 401 that
+  used the token from one that did not.
+
 ## 0.9.0
 
 - One `DevFaults` for the three request faults, wherever they apply:

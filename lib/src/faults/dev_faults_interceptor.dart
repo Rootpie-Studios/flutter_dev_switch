@@ -3,10 +3,12 @@ import 'package:dio/dio.dart';
 import 'dev_faults.dart';
 
 /// [DevFaults] applied to the live API, as one Dio interceptor: the delay,
-/// "offline" (every request fails to connect) and "refuse writes" (a
-/// write gets the picked 403 or 500), read per request so a pick applies
-/// at once. Add it before the app's own interceptors, so a refused request
-/// never reaches them or the network:
+/// "offline" (every request fails to connect) and "refuse requests" (a
+/// write gets the picked 403 or 500, every request the picked 401),
+/// read per request so a pick applies at once. A refused request never
+/// reaches the network. Add it after the interceptor that attaches the
+/// app's token, if the app tells a 401 that used its token from one that
+/// did not, so a refused 401 ends the session as a real one would:
 ///
 /// ```dart
 /// dio.interceptors.add(DevFaultsInterceptor(apiConfig.faults));

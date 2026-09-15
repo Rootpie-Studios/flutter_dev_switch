@@ -16,7 +16,7 @@ typedef MockHandler =
 /// Dio's transport, answered by [handler] and behaving as the server's
 /// [MockServer.faults] say: every request waits the delay, fails to
 /// connect when offline, gets the picked 403 or 500 when it is a refused
-/// write, and is recorded either way.
+/// write (the picked 401 whatever it is), and is recorded either way.
 ///
 /// ```dart
 /// final Dio dio = Dio(BaseOptions(baseUrl: 'http://mock'))

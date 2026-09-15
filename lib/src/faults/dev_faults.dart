@@ -4,15 +4,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../dev_tools.dart';
 
 /// What the developer menu does to requests on the way out: every one is
-/// held back by [delay], fails to connect when [offline], and a write is
-/// answered with [refuseWith] (a 403 or a 500) instead of being sent. The
-/// same three knobs serve the live API (as `ApiConfig.faults`, applied by
+/// held back by [delay], fails to connect when [offline], and a request is
+/// answered with [refuseWith] instead of being sent: a 403 or a 500 for
+/// writes, a 401 (the session is over) for every request. The same three
+/// knobs serve the live API (as `ApiConfig.faults`, applied by
 /// a `DevFaultsInterceptor`) and a `MockServer` in a dev catalog; a
 /// `DevFaultsPanel` shows them either way.
 ///
 /// The delay is kept in preferences when [prefsKey] is given, so a tester
 /// who set it finds it again after a restart, and sees it in the menu so
-/// it is not forgotten. Offline and refused writes are in memory only: a
+/// it is not forgotten. Offline and refused requests are in memory only: a
 /// tester who left the app offline should not find it so on restart.
 class DevFaults extends ChangeNotifier {
   /// Off, a realistic round trip, long enough to see a spinner, and long
@@ -24,9 +25,15 @@ class DevFaults extends ChangeNotifier {
     Duration(seconds: 3),
   ];
 
-  /// What a refused write can be answered with: not allowed, or the
-  /// server's fault. The two an app reacts to differently.
-  static const List<int> refusals = [403, 500];
+  /// What a refused request can be answered with: the session is over, not
+  /// allowed, or the server's fault. The three an app reacts to
+  /// differently.
+  static const List<int> refusals = [sessionOver, 403, 500];
+
+  /// The refusal that is not about the write: a token the server no
+  /// longer accepts is rejected on every request, so reads get it too,
+  /// and an app that ends its session on a 401 can be seen doing so.
+  static const int sessionOver = 401;
 
   /// Requests that only read; the rest are writes to [refuseWith].
   static const Set<String> reads = {'GET', 'HEAD', 'OPTIONS'};
@@ -65,8 +72,9 @@ class DevFaults extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The status every write is answered with instead of being sent, one
-  /// of [refusals]; null lets writes through. Reads work either way.
+  /// The status a refused request is answered with instead of being sent,
+  /// one of [refusals]; null lets everything through. Reads go out
+  /// regardless, unless it is [sessionOver].
   int? get refuseWith => _refuseWith;
   set refuseWith(int? status) {
     if (status == _refuseWith) return;
@@ -74,13 +82,15 @@ class DevFaults extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Writes are being refused.
-  bool get refuseWrites => _refuseWith != null;
+  /// Something is being refused.
+  bool get refusing => _refuseWith != null;
 
   /// The status a request with [method] is refused with right now, or
-  /// null when it may go out.
-  int? refusalFor(String method) =>
-      reads.contains(method.toUpperCase()) ? null : _refuseWith;
+  /// null when it may go out: reads go out unless the session is over.
+  int? refusalFor(String method) {
+    if (_refuseWith == sessionOver) return sessionOver;
+    return reads.contains(method.toUpperCase()) ? null : _refuseWith;
+  }
 
   /// Read the delay back from preferences; nothing to do without a
   /// [prefsKey]. A store install keeps no delay and drops one left behind

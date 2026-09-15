@@ -30,7 +30,7 @@ class DevMenuEntry {
 
 /// The hidden developer menu, in three sections: "Server" (the pick, a
 /// row opening the [ServerPicker]), "Faults" (the [DevFaultsPanel] for
-/// [ApiConfig.faults]: delay, offline, refuse writes), and "App", whatever
+/// [ApiConfig.faults]: delay, offline, refuse requests), and "App", whatever
 /// [entries] the app adds. [show] opens it; the DevShell calls that from
 /// every screen. Shows nothing and does nothing unless [DevTools.enabled].
 class DevMenu extends StatelessWidget {
